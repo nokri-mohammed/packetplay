@@ -93,8 +93,10 @@ diff.
 
 ## Design changes requested by the CEO (2026-11-14, via the homelab-team session)
 
-**Status: proposed, waiting for the CEO's confirmation. Nothing below is built.** M1 to M4 are
-already built and pushed, so both changes are rework of shipped code, not new work on a clean slate.
+**Status: approved by the CEO on 2026-11-14 ("I want to use 3d grid as background", "between two
+nodes always show two arrows not one line"). Built by T-20261114-15.** M1 to M4 were already built
+and pushed, so both changes are rework of shipped code. The defaults proposed under "Open points"
+are accepted.
 
 ### Change 1: isometric 3D grid background
 
