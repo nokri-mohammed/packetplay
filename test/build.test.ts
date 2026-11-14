@@ -149,9 +149,10 @@ describe("website example", () => {
     expect(timeline.chapters.length).toBe(4);
     expect(timeline.steps.length).toBe(10);
     // Step 1 (the DNS query, client to dns) types "shop.example.com" (16 characters): 16 * 80 + 500 = 1780 ms, then
-    // 3 hops of 1750 ms, so 1780 + 5250 = 7030 ms. The other 9 steps are 3 hops * 1750 = 5250 ms each.
-    // 7030 + 9 * 5250 + 9 gaps * 450 = 7030 + 47250 + 4050 = 58330.
-    expect(timeline.totalMs).toBe(58330);
+    // Every route is client, router, ISP, Internet, server: 4 hops of 1750 ms = 7000 ms per step.
+    // Step 1 adds the typing: 1780 + 7000 = 8780 ms. The other 9 steps are 7000 ms each.
+    // 8780 + 9 * 7000 + 9 gaps * 450 = 8780 + 63000 + 4050 = 75830.
+    expect(timeline.totalMs).toBe(75830);
     expect(timeline.hidden).toEqual(["web"]);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
@@ -164,13 +165,13 @@ describe("website example: hidden server", () => {
     const { layoutScene } = await import("../src/layout.ts");
     const scene = await loadScene(root + "examples/website.scene.yaml");
     const tl = compileTimeline(scene, layoutScene(scene));
-    // Step 1 (DNS query): 1780 ms typing + 3 hops * 1750 = 7030, gap 450, so the DNS answer starts at 7480.
-    // Its hops start at 7480, 9230 and 10980. The last one arrives 1100 ms later: 12080.
+    // Step 1 (DNS query): 1780 ms typing + 4 hops * 1750 = 8780, gap 450, so the DNS answer starts at 9230.
+    // Its 4 hops start at 9230, 10980, 12730 and 14480. The last one arrives 1100 ms later: 15580.
     const answer = tl.steps.find((s) => s.label === "DNS answer")!;
-    expect(answer.startMs).toBe(7480);
-    expect(answer.hops.map((h) => h.startMs)).toEqual([7480, 9230, 10980]);
-    expect(tl.reveals).toEqual([{ node: "web", atMs: 12080, stepId: answer.id }]);
-    expect(tl.reveals[0]!.atMs).toBe(answer.hops[2]!.endMs);
+    expect(answer.startMs).toBe(9230);
+    expect(answer.hops.map((h) => h.startMs)).toEqual([9230, 10980, 12730, 14480]);
+    expect(tl.reveals).toEqual([{ node: "web", atMs: 15580, stepId: answer.id }]);
+    expect(tl.reveals[0]!.atMs).toBe(answer.hops[3]!.endMs);
   });
 
   test("the static SVG still shows the node and has no style element", async () => {
@@ -204,6 +205,38 @@ describe("osi example", () => {
     expect(timeline.steps.length).toBe(8);
     // Each step is 1 hop: 1100 + 650 = 1750 ms. 8 * 1750 + 7 gaps * 450 = 14000 + 3150 = 17150.
     expect(timeline.totalMs).toBe(17150);
+    const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
+    expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
+  });
+});
+
+describe("homenet example", () => {
+  const homeYaml = root + "examples/homenet.scene.yaml";
+  const homeJson = root + "examples/homenet.scene.json";
+
+  test("YAML and JSON give the same model and it validates", async () => {
+    const y = (await loadScene(homeYaml)) as unknown as Record<string, unknown>;
+    const j = (await loadScene(homeJson)) as unknown as Record<string, unknown>;
+    delete y.$schema;
+    delete j.$schema;
+    expect(y).toEqual(j);
+    expect(validateScene(y)).toEqual([]);
+  });
+
+  test("builds a page with 14 nodes, 4 chapters, 6 steps and the hand-calculated totalMs", async () => {
+    const html = await buildHtml(await loadScene(homeYaml));
+    expect(html).toContain("<title>A home network: two switches, one router</title>");
+    const svg = html.match(/<svg[\s\S]*?<\/svg>/)?.[0] ?? "";
+    expect(svg.match(/<g data-node="/g)?.length).toBe(14);
+    const m = html.match(/<script type="application\/json" id="timeline-data">([\s\S]*?)<\/script>/);
+    const timeline = JSON.parse(m?.[1] ?? "{}");
+    expect(timeline.chapters.length).toBe(4);
+    expect(timeline.steps.length).toBe(6);
+    // Chapter 1: 2 steps of 3 hops (1750 ms each hop) = 5250 ms each, one 450 ms gap: ends at 10950, gap to 11400.
+    // Chapter 2: 4 hops = 7000 ms: 11400 to 18400, gap to 18850.
+    // Chapter 3: 2 hops = 3500 ms: 18850 to 22350, gap to 22800.
+    // Chapter 4: two parallel flow steps of 4300 ms from 22800: ends at 27100.
+    expect(timeline.totalMs).toBe(27100);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
   });

@@ -2,15 +2,20 @@
 title: How a browser loads a website
 
 nodes:
-  client: { label: Client,          icon: laptop, sub: 192.0.2.20 }
-  router: { label: Your router,     icon: router, sub: NAT }
+  client: { label: Client,          icon: laptop, sub: 192.0.2.20, group: lan }
+  router: { label: Your router,     icon: router, sub: NAT, group: lan }
+  isp:    { label: ISP,             icon: tower,  sub: your internet provider }
   net:    { label: Internet,        icon: cloud }
   dns:    { label: DNS resolver,    icon: server, sub: 198.51.100.53 }
   web:    { label: shop.example.com, icon: server, sub: 198.51.100.80, hidden: true }
 
+groups:
+  lan: { label: Local network (home) }
+
 links:
   - [client, router]
-  - [router, net]
+  - [router, isp]
+  - [isp, net]
   - [net, dns]
   - [net, web]
 
@@ -38,6 +43,8 @@ chapters:
           router:
             set: { src: "203.0.113.7:61000" }
             desc: NAT replaces your private source address and port
+          isp:
+            desc: Your ISP carries the packet out of your home network onto the Internet
       - from: dns
         to: client
         track: dns
