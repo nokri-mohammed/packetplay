@@ -1,6 +1,7 @@
 # svg-scenes: design plan
 
-**Status:** Draft, waiting for CEO approval. No engine work starts before approval.
+**Status:** Approved by the CEO on 2026-11-14 (stack confirmed: TypeScript on Bun). M1 tickets are in
+`docs/tickets/` (T-20261114-1 to 5).
 
 ## Goal
 
