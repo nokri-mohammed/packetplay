@@ -1,7 +1,7 @@
-import { HOP_MS, type HopTL, type StepTL, type Timeline } from "./timeline.ts";
+import { HOP_MS, TYPE_CHAR_MS, type HopTL, type StepTL, type Timeline } from "./timeline.ts";
 
 export const SPEEDS: readonly number[] = [0.5, 1, 1.5, 2];
-export const PULSE_MS = 750;
+export const PULSE_MS = 650;
 
 export interface Caption {
   chapterTitle: string;
@@ -113,14 +113,16 @@ export const ROUTE_DASH_MS = 25;
 /**
  * The dotted route of a step at time t: every hop of the step, an opacity that ramps 0 to 1 over the
  * first 300 ms and 1 to 0 over the last 300 ms, and the dash offset (a pure function of t).
- * Null when t is outside [startMs, endMs].
+ * The route starts when the message leaves, at startMs + typingMs. Null when t is outside
+ * [startMs + typingMs, endMs].
  */
 export function routeHighlight(
   t: number,
   step: StepTL,
 ): { hops: HopTL[]; opacity: number; offset: number } | null {
-  if (t < step.startMs || t > step.endMs) return null;
-  const fadeIn = (t - step.startMs) / ROUTE_FADE_MS;
+  const from = step.startMs + step.typingMs;
+  if (t < from || t > step.endMs) return null;
+  const fadeIn = (t - from) / ROUTE_FADE_MS;
   const fadeOut = (step.endMs - t) / ROUTE_FADE_MS;
   const opacity = Math.min(1, Math.max(0, Math.min(fadeIn, fadeOut)));
   return { hops: step.hops, opacity, offset: -t / ROUTE_DASH_MS };
@@ -132,6 +134,50 @@ export const REVEAL_FADE_MS = 600;
 /** Opacity of a revealed node at time t: 0 before `atMs`, ramping to 1 over 600 ms. */
 export function revealOpacity(t: number, atMs: number): number {
   return Math.min(1, Math.max(0, (t - atMs) / REVEAL_FADE_MS));
+}
+
+/** Length of the pop of a revealed node. */
+export const POP_MS = 700;
+/** Rings that expand from a revealed node: radius from 48 to 150 over 900 ms, the second one 250 ms later. */
+export const RING_MS = 900;
+export const RING_DELAYS: readonly number[] = [0, 250];
+const POP_PEAK = 0.6; // fraction of POP_MS at which the scale peaks
+
+/**
+ * The reveal effect at time t, a pure function of the clock. Scale: with u = (t - atMs) / 700,
+ * 0.6 + 0.55 * sin(u / 0.6 * pi / 2) for u up to 0.6 (0.6 to 1.15), then
+ * 1.15 - 0.15 * sin((u - 0.6) / 0.4 * pi / 2) for u up to 1 (1.15 back to 1), and 1 after that.
+ * Each ring, with v = (t - atMs - delay) / 900, exists for 0 <= v < 1 with radius 48 + 102 v and
+ * opacity 0.8 * (1 - v). Before atMs there is no effect: scale 1 and no rings.
+ */
+export function revealPop(t: number, atMs: number): { scale: number; rings: { r: number; opacity: number }[] } {
+  const u = (t - atMs) / POP_MS;
+  let scale = 1;
+  if (u >= 0 && u < POP_PEAK) scale = 0.6 + 0.55 * Math.sin(((u / POP_PEAK) * Math.PI) / 2);
+  else if (u >= POP_PEAK && u < 1) scale = 1.15 - 0.15 * Math.sin((((u - POP_PEAK) / (1 - POP_PEAK)) * Math.PI) / 2);
+  const rings: { r: number; opacity: number }[] = [];
+  for (const d of RING_DELAYS) {
+    const v = (t - atMs - d) / RING_MS;
+    if (v >= 0 && v < 1) rings.push({ r: 48 + 102 * v, opacity: 0.8 * (1 - v) });
+  }
+  return { scale, rings };
+}
+
+/** The caret blinks every 400 ms from the start of the step. */
+export const CARET_MS = 400;
+
+/**
+ * The typing animation of a step at time t, or null outside [startMs, startMs + typingMs).
+ * One character per 80 ms. `sent` is true during the hold after the last character (the Enter flash),
+ * when the caret has stopped.
+ */
+export function typingState(t: number, step: StepTL): { text: string; caret: boolean; sent: boolean } | null {
+  if (step.typingMs <= 0 || t < step.startMs || t >= step.startMs + step.typingMs) return null;
+  const el = t - step.startMs;
+  const typed = step.typing.length * TYPE_CHAR_MS;
+  const sent = el >= typed;
+  const chars = Math.min(step.typing.length, Math.floor(el / TYPE_CHAR_MS));
+  return { text: step.typing.slice(0, chars), caret: !sent && Math.floor(el / CARET_MS) % 2 === 0, sent };
 }
 
 /** Everything that is visible at time t. */
@@ -158,13 +204,14 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
 
   for (const s of tl.steps) {
     if (!(s.startMs <= t && t < s.endMs)) continue;
+    if (t < s.startMs + s.typingMs) continue; // still typing: nothing has left yet
     if (s.mode === "flow") {
       flows.push({
         stepId: s.id,
         path: s.path,
         color: s.color,
         both: s.both,
-        progress: (t - s.startMs) / (s.endMs - s.startMs),
+        progress: (t - s.startMs - s.typingMs) / (s.endMs - s.startMs - s.typingMs),
       });
       continue;
     }

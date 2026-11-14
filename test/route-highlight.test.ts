@@ -15,8 +15,8 @@ const hop = (from: string, to: string): HopTL => ({
   endMs: 0,
   data: {},
 });
-// A step from 1000 ms to 7150 ms (three hops of 2050 ms).
-const step = { startMs: 1000, endMs: 7150, hops: [hop("a", "b"), hop("b", "c"), hop("c", "d")] } as unknown as StepTL;
+// A step from 1000 ms to 7150 ms (no typing).
+const step = { startMs: 1000, endMs: 7150, typingMs: 0, hops: [hop("a", "b"), hop("b", "c"), hop("c", "d")] } as unknown as StepTL;
 
 describe("routeHighlight", () => {
   test("null outside the step", () => {

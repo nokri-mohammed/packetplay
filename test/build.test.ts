@@ -102,14 +102,14 @@ describe("udp example", () => {
     const m = html.match(/<script type="application\/json" id="timeline-data">([\s\S]*?)<\/script>/);
     const timeline = JSON.parse(m?.[1] ?? "{}");
     expect(timeline.chapters.length).toBe(3);
-    // Chapter 1: 3 hops * (1300 + 750) = 6150, gap 500. Chapter 2 starts at 6650, ends 12800, gap 500.
-    // Chapter 3 (flow) starts at 13300 and lasts 5000, so the end is 18300.
+    // Chapter 1: 3 hops * (1100 + 650) = 5250, gap 450. Chapter 2 starts at 5700, ends 10950, gap 450.
+    // Chapter 3 (flow) starts at 11400 and lasts 4300, so the end is 15700.
     expect(timeline.chapters.map((c: { startMs: number; endMs: number }) => [c.startMs, c.endMs])).toEqual([
-      [0, 6150],
-      [6650, 12800],
-      [13300, 18300],
+      [0, 5250],
+      [5700, 10950],
+      [11400, 15700],
     ]);
-    expect(timeline.totalMs).toBe(18300);
+    expect(timeline.totalMs).toBe(15700);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
   });
@@ -148,9 +148,10 @@ describe("website example", () => {
     const timeline = JSON.parse(m?.[1] ?? "{}");
     expect(timeline.chapters.length).toBe(5);
     expect(timeline.steps.length).toBe(11);
-    // Step 1 (you to laptop) is 1 hop: 2050 ms. The other 10 steps are 3 hops * 2050 = 6150 ms each.
-    // 2050 + 10 * 6150 + 10 gaps * 500 = 68550.
-    expect(timeline.totalMs).toBe(68550);
+    // Step 1 (you to laptop) types "shop.example.com" (16 characters): 16 * 80 + 500 = 1780 ms, then
+    // 1 hop of 1750 ms, so 3530 ms. The other 10 steps are 3 hops * 1750 = 5250 ms each.
+    // 3530 + 10 * 5250 + 10 gaps * 450 = 3530 + 52500 + 4500 = 60530.
+    expect(timeline.totalMs).toBe(60530);
     expect(timeline.hidden).toEqual(["web"]);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
@@ -163,13 +164,13 @@ describe("website example: hidden server", () => {
     const { layoutScene } = await import("../src/layout.ts");
     const scene = await loadScene(root + "examples/website.scene.yaml");
     const tl = compileTimeline(scene, layoutScene(scene));
-    // Step 1: 1 hop, 2050 ms, gap 500, so the DNS query starts at 2550.
-    // The query is 3 hops: 2550 + 6150 = 8700, gap 500, so the DNS answer starts at 9200.
-    // Its hops start at 9200, 11250 and 13300. The last one arrives 1300 ms later: 14600.
+    // Step 1: 1780 ms typing + 1750 ms hop = 3530, gap 450, so the DNS query starts at 3980.
+    // The query is 3 hops: 3980 + 5250 = 9230, gap 450, so the DNS answer starts at 9680.
+    // Its hops start at 9680, 11430 and 13180. The last one arrives 1100 ms later: 14280.
     const answer = tl.steps.find((s) => s.label === "DNS answer")!;
-    expect(answer.startMs).toBe(9200);
-    expect(answer.hops.map((h) => h.startMs)).toEqual([9200, 11250, 13300]);
-    expect(tl.reveals).toEqual([{ node: "web", atMs: 14600, stepId: answer.id }]);
+    expect(answer.startMs).toBe(9680);
+    expect(answer.hops.map((h) => h.startMs)).toEqual([9680, 11430, 13180]);
+    expect(tl.reveals).toEqual([{ node: "web", atMs: 14280, stepId: answer.id }]);
     expect(tl.reveals[0]!.atMs).toBe(answer.hops[2]!.endMs);
   });
 
@@ -202,8 +203,8 @@ describe("osi example", () => {
     const timeline = JSON.parse(m?.[1] ?? "{}");
     expect(timeline.chapters.length).toBe(2);
     expect(timeline.steps.length).toBe(8);
-    // Each step is 1 hop: 1300 + 750 = 2050 ms. 8 * 2050 + 7 gaps * 500 = 16400 + 3500 = 19900.
-    expect(timeline.totalMs).toBe(19900);
+    // Each step is 1 hop: 1100 + 650 = 1750 ms. 8 * 1750 + 7 gaps * 450 = 14000 + 3150 = 17150.
+    expect(timeline.totalMs).toBe(17150);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
   });

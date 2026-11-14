@@ -219,6 +219,10 @@ export interface Step {
    * Nodes that appear when this step's message arrives.
    */
   reveal?: string[];
+  /**
+   * Text typed at the source node before the message is sent.
+   */
+  typing?: string;
 }
 /**
  * What changes at a node when the message arrives.

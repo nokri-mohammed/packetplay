@@ -3,11 +3,14 @@ import { lane, lanePacketEnds, laneId } from "./lanes.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
-export const HOP_MS = 1300;
+export const HOP_MS = 1100;
 /** How long a packet rests at the node it has just reached. */
-export const NODE_DWELL_MS = 750;
-export const FLOW_MS = 5000;
-export const STEP_GAP_MS = 500;
+export const NODE_DWELL_MS = 650;
+export const FLOW_MS = 4300;
+export const STEP_GAP_MS = 450;
+/** Typing animation: time per character, and the pause after the last one (the Enter flash). */
+export const TYPE_CHAR_MS = 80;
+export const TYPE_HOLD_MS = 500;
 export const NEUTRAL_COLOR = "#6b7280";
 export const TRACK_COLORS: Record<string, string> = {
   blue: "#3b82f6",
@@ -58,6 +61,10 @@ export interface StepTL {
   pause: boolean;
   path: string[];
   hops: HopTL[];
+  /** Time spent typing at the source node before the message leaves. 0 when the step has no `typing`. */
+  typingMs: number;
+  /** The text typed at the source node, or an empty string. */
+  typing: string;
   startMs: number;
   endMs: number;
 }
@@ -107,7 +114,10 @@ function compileStep(
   const trackDef = track !== null ? scene.tracks?.[track] : undefined;
   const color = trackDef ? resolveColor(trackDef.color) : NEUTRAL_COLOR;
   const hopCount = path.length - 1;
-  const endMs = startMs + (mode === "flow" ? FLOW_MS : hopCount * (HOP_MS + NODE_DWELL_MS));
+  const typing = step.typing ?? "";
+  const typingMs = typing.length > 0 ? typing.length * TYPE_CHAR_MS + TYPE_HOLD_MS : 0;
+  const goMs = startMs + typingMs; // the message leaves here
+  const endMs = goMs + (mode === "flow" ? FLOW_MS : hopCount * (HOP_MS + NODE_DWELL_MS));
 
   const hops: HopTL[] = [];
   for (let i = 0; i < hopCount; i++) {
@@ -131,8 +141,8 @@ function compileStep(
       x2: fe.x2,
       y2: fe.y2,
       back: { link: rev.id, x1: re.x1, y1: re.y1, x2: re.x2, y2: re.y2 },
-      startMs: mode === "flow" ? startMs : startMs + i * (HOP_MS + NODE_DWELL_MS),
-      endMs: mode === "flow" ? startMs + FLOW_MS : startMs + i * (HOP_MS + NODE_DWELL_MS) + HOP_MS,
+      startMs: mode === "flow" ? goMs : goMs + i * (HOP_MS + NODE_DWELL_MS),
+      endMs: mode === "flow" ? goMs + FLOW_MS : goMs + i * (HOP_MS + NODE_DWELL_MS) + HOP_MS,
       data,
     };
     const note = step.at?.[to]?.desc;
@@ -153,6 +163,8 @@ function compileStep(
     pause: step.pause ?? false,
     path,
     hops,
+    typingMs,
+    typing,
     startMs,
     endMs,
   };

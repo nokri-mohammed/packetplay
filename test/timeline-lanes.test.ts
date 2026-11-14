@@ -89,38 +89,38 @@ describe("webrtc example lanes", () => {
 });
 
 describe("timing with node dwell", () => {
-  test("the webrtc example totals 57200 ms, by hand", async () => {
-    // hop step: n * (1300 + 750) = n * 2050; flow step: 5000; gap after each step: 500
-    // 3 hops = 6150 (x4 steps), 6 hops = 12300 (x2 steps), flow = 5000
-    // 4 * 6150 + 2 * 12300 + 5000 + 6 gaps * 500 = 24600 + 24600 + 5000 + 3000 = 57200
+  test("the webrtc example totals 49000 ms, by hand", async () => {
+    // hop step: n * (1100 + 650) = n * 1750; flow step: 4300; gap after each step: 450
+    // 3 hops = 5250 (x4 steps), 6 hops = 10500 (x2 steps), flow = 4300
+    // 4 * 5250 + 2 * 10500 + 4300 + 6 gaps * 450 = 21000 + 21000 + 4300 + 2700 = 49000
     const s = await loadScene(root + "examples/webrtc.scene.yaml");
     const tl = compileTimeline(s, layoutScene(s));
     expect(tl.steps.map((st) => [st.startMs, st.endMs])).toEqual([
-      [0, 6150],
-      [6650, 12800],
-      [13300, 19450],
-      [19950, 26100],
-      [26600, 38900],
-      [39400, 51700],
-      [52200, 57200],
+      [0, 5250],
+      [5700, 10950],
+      [11400, 16650],
+      [17100, 22350],
+      [22800, 33300],
+      [33750, 44250],
+      [44700, 49000],
     ]);
-    expect(tl.totalMs).toBe(57200);
+    expect(tl.totalMs).toBe(49000);
   });
 
-  test("hops start every 2050 ms, travel 1300 ms, and the packet rests on the arrived node", async () => {
+  test("hops start every 1750 ms, travel 1100 ms, and the packet rests on the arrived node", async () => {
     const s = await loadScene(root + "examples/webrtc.scene.yaml");
     const tl = compileTimeline(s, layoutScene(s));
     const st = tl.steps[0]!;
     expect(st.hops.map((h) => [h.startMs, h.endMs])).toEqual([
-      [0, 1300],
-      [2050, 3350],
-      [4100, 5400],
+      [0, 1100],
+      [1750, 2850],
+      [3500, 4600],
     ]);
     const h0 = st.hops[0]!;
-    const rest = frameAt(tl, 2000).packets[0]!;
+    const rest = frameAt(tl, 1500).packets[0]!;
     expect([rest.x, rest.y]).toEqual([h0.x2, h0.y2]);
     const last = st.hops[2]!;
-    const final = frameAt(tl, 6000);
+    const final = frameAt(tl, 5000);
     expect(final.stepId).toBe(st.id);
     expect([final.packets[0]!.x, final.packets[0]!.y]).toEqual([last.x2, last.y2]);
     expect(final.packets[0]!.label).toBe(st.label);
@@ -193,7 +193,7 @@ describe("pass-through hop endpoints", () => {
     const tl = compileTimeline(sc, layout);
     const [h0, h1] = tl.steps[0]!.hops;
     expect([h0!.x2, h1!.x1]).toEqual([156, 244]);
-    const rest = frameAt(tl, 2000).packets[0]!;
+    const rest = frameAt(tl, 1500).packets[0]!;
     expect([rest.x, rest.y]).toEqual([156, 8]);
     const next = frameAt(tl, h1!.startMs).packets[0]!;
     expect([next.x, next.y]).toEqual([244, 8]);

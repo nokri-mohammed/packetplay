@@ -83,6 +83,7 @@
           "to": "laptop",
           "track": "visit",
           "label": "Visit shop.example.com",
+          "typing": "shop.example.com",
           "desc": "You type the address into the browser and press Enter. Your browser only knows the name, so it must find the server's address first.",
           "data": {
             "action": "type the address",

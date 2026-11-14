@@ -333,6 +333,12 @@
             "type": "string"
           },
           "description": "Nodes that appear when this step's message arrives."
+        },
+        "typing": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Text typed at the source node before the message is sent."
         }
       }
     },

@@ -13,7 +13,9 @@ import {
   nextTime,
   prevTime,
   revealOpacity,
+  revealPop,
   routeHighlight,
+  typingState,
   stepSpeed,
   timeFromFraction,
   timelineMarks,
@@ -22,7 +24,7 @@ import {
   type Frame,
   type Jump,
 } from "./player-core.ts";
-import { FLOW_MS, type StepTL, type Timeline } from "./timeline.ts";
+import { FLOW_MS, TYPE_CHAR_MS, type StepTL, type Timeline } from "./timeline.ts";
 
 const DWELL_MS = 2000; // reduced motion: time spent on each step
 const FLOW_SPACING = 36;
@@ -292,8 +294,69 @@ function drawHidden(opacityOf: (id: string) => number): void {
   for (const [el, o] of per) el.setAttribute("opacity", o.toFixed(3));
 }
 
-function drawOverlay(f: Frame): void {
+// Reveal pop: the node group scales about its centre (its transform is a translate to the centre) and
+// two rings expand from it. All of it is a pure function of the clock, so seeking works.
+const nodeGroups = new Map<string, { el: Element; orig: string }>();
+for (const id of hiddenIds) {
+  const el = [...svg.querySelectorAll("g[data-node]")].find((g) => g.getAttribute("data-node") === id);
+  if (el) nodeGroups.set(id, { el, orig: el.getAttribute("transform") ?? "" });
+}
+function drawPop(t: number | null): string {
   let out = "";
+  for (const [id, g] of nodeGroups) {
+    const r = revealAt.get(id);
+    const pop = t !== null && r ? revealPop(t, r.atMs) : { scale: 1, rings: [] };
+    if (pop.scale === 1) g.el.setAttribute("transform", g.orig);
+    else g.el.setAttribute("transform", `${g.orig} scale(${pop.scale.toFixed(3)})`);
+    const pos = nodePos.get(id);
+    const color = r ? (stepById.get(r.stepId)?.color ?? "#6b7280") : "#6b7280";
+    if (!pos) continue;
+    for (const ring of pop.rings) {
+      out += `<circle cx="${pos.x}" cy="${pos.y}" r="${ring.r.toFixed(1)}" fill="none" stroke="${color}" stroke-width="4" stroke-opacity="${ring.opacity.toFixed(3)}"/>`;
+    }
+  }
+  return out;
+}
+
+// Typing: an address-bar style input above the source node. `flash` thickens the border once at the
+// start of the hold; the Enter tag shows for the whole hold.
+function typingMarkup(step: StepTL, st: { text: string; caret: boolean; sent: boolean }, flash: boolean): string {
+  const pos = nodePos.get(step.path[0] as string);
+  if (!pos) return "";
+  const w = Math.max(110, Math.round(step.typing.length * PK_CHAR + 28));
+  const h = 26;
+  const box = balloonRect(pos.x, pos.y, w, h, 1);
+  const x0 = box.x.toFixed(1);
+  const y0 = box.y.toFixed(1);
+  let out = `<rect class="pk-bg" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="13" stroke="${step.color}" stroke-width="${flash ? 3.5 : 1.5}"/>`;
+  out += `<text class="pk-tx pk-row" font-size="${PK_FONT}" x="${(box.x + 12).toFixed(1)}" y="${(box.y + 17).toFixed(1)}" xml:space="preserve">${esc(st.text)}</text>`;
+  if (st.caret) {
+    const cx = box.x + 12 + st.text.length * PK_CHAR + 1;
+    out += `<rect x="${cx.toFixed(1)}" y="${(box.y + 6).toFixed(1)}" width="1.5" height="14" fill="${step.color}"/>`;
+  }
+  if (st.sent) {
+    const tx = box.x + w - 4;
+    out += `<rect x="${(tx - 44).toFixed(1)}" y="${(box.y - 22).toFixed(1)}" width="44" height="18" rx="5" fill="${step.color}"/>`;
+    out += `<text class="pk-tx" font-size="${PK_FONT - 1}" font-weight="700" fill="${onColor(step.color)}" x="${(tx - 22).toFixed(1)}" y="${(box.y - 9).toFixed(1)}" text-anchor="middle">Enter</text>`;
+  }
+  return out;
+}
+function typingOverlay(t: number | null, reducedStep: StepTL | null): string {
+  if (reducedStep) {
+    return reducedStep.typingMs > 0 ? typingMarkup(reducedStep, { text: reducedStep.typing, caret: false, sent: true }, false) : "";
+  }
+  let out = "";
+  for (const s of tl.steps) {
+    const st = t === null ? null : typingState(t, s);
+    if (!st) continue;
+    const into = (t as number) - s.startMs - s.typing.length * TYPE_CHAR_MS;
+    out += typingMarkup(s, st, st.sent && into < 250);
+  }
+  return out;
+}
+
+function drawOverlay(f: Frame, extra: string): void {
+  let out = extra;
   for (const p of f.pulses) {
     const pos = nodePos.get(p.node);
     if (!pos) continue;
@@ -424,9 +487,10 @@ let ticking = false;
 
 function render(c: number): void {
   const f = reduced ? reducedFrame(c) : frameAt(tl, c);
-  drawOverlay(f);
   if (reduced) {
     const i = Math.max(0, Math.min(nSteps - 1, Math.floor(c / DWELL_MS)));
+    drawPop(null);
+    drawOverlay(f, typingOverlay(null, tl.steps[i] ?? null));
     drawRoutes(0, tl.steps[i] ?? null);
     // Shown from the step that reveals it, no fade.
     drawHidden((id) => {
@@ -435,6 +499,7 @@ function render(c: number): void {
       return rs && tl.steps.indexOf(rs) <= i ? 1 : 0;
     });
   } else {
+    drawOverlay(f, drawPop(c) + typingOverlay(c, null));
     drawRoutes(c, null);
     drawHidden((id) => {
       const r = revealAt.get(id);
