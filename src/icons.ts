@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
+import { embedded } from "./embedded.ts";
 
 export interface Icon {
   name: string;
@@ -15,10 +16,12 @@ const cache = new Map<string, Icon>();
 
 /** Sorted names of the vendored icons (file stems of icons/isoflow/*.svg). */
 export function iconNames(): string[] {
-  names ??= readdirSync(ICON_DIR)
-    .filter((f) => f.endsWith(".svg"))
-    .map((f) => f.slice(0, -4))
-    .sort();
+  names ??= (embedded
+    ? Object.keys(embedded.icons)
+    : readdirSync(ICON_DIR)
+        .filter((f) => f.endsWith(".svg"))
+        .map((f) => f.slice(0, -4))
+  ).sort();
   return [...names];
 }
 
@@ -41,7 +44,7 @@ export function loadIcon(name: string): Icon {
   const hit = cache.get(name);
   if (hit) return hit;
 
-  const raw = readFileSync(new URL(`${name}.svg`, ICON_DIR), "utf8");
+  const raw = embedded?.icons[name] ?? readFileSync(new URL(`${name}.svg`, ICON_DIR), "utf8");
   const open = raw.match(/<svg\b[^>]*>/);
   const close = raw.lastIndexOf("</svg>");
   if (!open || open.index === undefined || close < 0) {

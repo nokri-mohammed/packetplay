@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import Ajv2020 from "ajv/dist/2020";
 import type { ErrorObject } from "ajv";
+import { embedded } from "./embedded.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
@@ -11,11 +12,11 @@ export interface Issue {
   message: string;
 }
 
-const schema = JSON.parse(
-  readFileSync(new URL("../schema/scene.schema.json", import.meta.url), "utf8"),
-);
+const schema =
+  embedded?.schema ??
+  JSON.parse(readFileSync(new URL("../schema/scene.schema.json", import.meta.url), "utf8"));
 const ajv = new Ajv2020({ allErrors: true, strict: true });
-const check = ajv.compile(schema);
+const check = ajv.compile(schema as object);
 
 function pathOf(ptr: string): string {
   return ptr

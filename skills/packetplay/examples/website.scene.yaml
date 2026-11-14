@@ -1,0 +1,158 @@
+# yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
+title: How a browser loads a website
+
+nodes:
+  client: { label: Client,          icon: laptop, sub: 192.0.2.20, group: lan }
+  router: { label: Your router,     icon: router, sub: NAT, group: lan }
+  isp:    { label: ISP,             icon: tower,  sub: your internet provider }
+  net:    { label: Internet,        icon: cloud }
+  dns:    { label: DNS resolver,    icon: server, sub: 198.51.100.53 }
+  web:    { label: shop.example.com, icon: server, sub: 198.51.100.80, hidden: true }
+
+groups:
+  lan: { label: Local network (home) }
+
+links:
+  - [client, router]
+  - [router, isp]
+  - [isp, net]
+  - [net, dns]
+  - [net, web]
+
+tracks:
+  dns:  { label: DNS lookup (UDP), color: purple }
+  tcp:  { label: TCP handshake,    color: orange }
+  tls:  { label: TLS handshake,    color: teal }
+  http: { label: HTTPS request,    color: green }
+
+chapters:
+  - title: 1. Visit the site and find its address (DNS)
+    steps:
+      - from: client
+        to: dns
+        track: dns
+        label: DNS query
+        typing: shop.example.com
+        desc: You type the address into the browser and press Enter. The browser only knows the name, so it asks the DNS resolver which address belongs to it. NAT swaps your private address for the router's public one.
+        data:
+          proto: UDP
+          src: "192.0.2.20:49152"
+          dst: "198.51.100.53:53"
+          question: "A shop.example.com?"
+        at:
+          router:
+            set: { src: "203.0.113.7:61000" }
+            desc: NAT replaces your private source address and port
+          isp:
+            desc: Your ISP carries the packet out of your home network onto the Internet
+      - from: dns
+        to: client
+        track: dns
+        label: DNS answer
+        desc: The resolver replies with the address. Now the browser knows where to connect. The server now appears.
+        reveal: [web]
+        data:
+          proto: UDP
+          src: "198.51.100.53:53"
+          dst: "203.0.113.7:61000"
+          answer: "198.51.100.80"
+        at:
+          router:
+            set: { dst: "192.0.2.20:49152" }
+            desc: NAT maps the reply back to the client
+
+  - title: 2. Open a connection (TCP handshake)
+    steps:
+      - from: client
+        to: web
+        track: tcp
+        label: SYN
+        desc: The client asks the server to open a connection and proposes a starting number.
+        data:
+          flags: SYN
+          src: "192.0.2.20:50000"
+          dst: "198.51.100.80:443"
+          seq: 1000
+        at:
+          router:
+            set: { src: "203.0.113.7:61001" }
+            desc: NAT replaces your private source address and port
+      - from: web
+        to: client
+        track: tcp
+        label: SYN-ACK
+        desc: The server agrees and sends its own starting number.
+        data:
+          flags: SYN-ACK
+          src: "198.51.100.80:443"
+          dst: "203.0.113.7:61001"
+          seq: "seq 5000, ack 1001"
+        at:
+          router:
+            set: { dst: "192.0.2.20:50000" }
+            desc: NAT maps the reply back to the client
+      - from: client
+        to: web
+        track: tcp
+        label: ACK
+        desc: The connection is open. Both sides agree on the numbers.
+        data:
+          flags: ACK
+          src: "192.0.2.20:50000"
+          dst: "198.51.100.80:443"
+          seq: "seq 1001, ack 5001"
+        at:
+          router:
+            set: { src: "203.0.113.7:61001" }
+            desc: NAT replaces your private source address and port
+
+  - title: 3. Agree on encryption (TLS handshake)
+    steps:
+      - from: client
+        to: web
+        track: tls
+        label: ClientHello
+        desc: The browser lists the encryption methods it supports and names the site it wants.
+        data:
+          proto: TLS 1.3
+          offers: "cipher suites"
+          sni: "shop.example.com"
+      - from: web
+        to: client
+        track: tls
+        label: ServerHello + certificate
+        desc: The server picks one method and proves who it is with a certificate.
+        data:
+          proto: TLS 1.3
+          chose: "one cipher suite"
+          certificate: "shop.example.com"
+      - from: client
+        to: web
+        track: tls
+        label: Key exchange + Finished
+        desc: Both sides now share a secret key. After this, everything is encrypted.
+        data:
+          proto: TLS 1.3
+          result: "shared secret"
+
+  - title: 4. Ask for the page (HTTPS)
+    steps:
+      - from: client
+        to: web
+        track: http
+        label: HTTP request
+        desc: The browser asks for the home page, inside the encrypted connection.
+        data:
+          request: "GET /"
+          host: "shop.example.com"
+          encrypted: yes
+      - from: web
+        to: client
+        track: http
+        label: HTTP response
+        desc: The server sends the page. The browser now draws it on screen.
+        data:
+          status: "200 OK"
+          body: "the web page (HTML)"
+          encrypted: yes

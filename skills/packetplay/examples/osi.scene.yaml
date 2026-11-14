@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
+title: "The OSI model: from a file to bits"
+
+nodes:
+  app:  { label: 7 Application, icon: document,       sub: "browser or Node, user space", group: user }
+  tcp:  { label: 4 Transport,   icon: package-module, sub: "kernel: TCP",                 group: kernel }
+  ip:   { label: 3 Network,     icon: router,         sub: "kernel: IP",                  group: kernel }
+  link: { label: 2 Data link,   icon: switch-module,  sub: "network card and driver",     group: hardware }
+  phys: { label: 1 Physical,    icon: tower,          sub: "network card (PHY)",          group: hardware }
+
+groups:
+  user:     { label: User space }
+  kernel:   { label: Kernel }
+  hardware: { label: Hardware }
+
+links:
+  - [app, tcp]
+  - [tcp, ip]
+  - [ip, link]
+  - [link, phys]
+
+tracks:
+  down: { label: "Sending: add a header",      color: blue }
+  up:   { label: "Receiving: remove a header", color: green }
+
+chapters:
+  - title: "1. Sender: from file to bits"
+    steps:
+      - from: app
+        to: tcp
+        track: down
+        label: send() to the kernel
+        desc: The browser (or Node) puts notes.txt in an HTTP POST and calls send() to hand the bytes to the kernel. Layers 5 and 6 (session, presentation) are not separate steps, because the browser does TLS and encoding itself.
+        data:
+          file: notes.txt
+          bytes: "4000"
+          message: HTTP headers + 4000 bytes
+      - from: tcp
+        to: ip
+        track: down
+        label: Cut into segments
+        desc: The kernel's TCP splits the stream into segments of at most about 1460 data bytes and adds a TCP header (ports, sequence number) to each.
+        data:
+          segments: 3 (1460 + 1460 + 1080)
+          header: TCP
+          fields: ports, sequence number
+      - from: ip
+        to: link
+        track: down
+        label: Add IP headers
+        desc: The kernel's IP layer adds a header with the source and destination address to each segment. That makes 3 packets, which the kernel passes to the network driver.
+        data:
+          packets: "3"
+          header: IP
+          fields: src IP, dst IP
+      - from: link
+        to: phys
+        track: down
+        label: Frame and bits
+        desc: The network card and its driver add an Ethernet header and a CRC to each packet, making 3 frames. The card (PHY) turns the preamble and frame into bits and sends a signal on the wire (voltage on copper, light in fibre or radio in WiFi).
+        data:
+          frames: 3 (ETH + IP + TCP + data + CRC)
+          bits: 10101010...10101011
+          then: 0110 1001 ...
+          signal: voltage, light or radio
+
+  - title: "2. Receiver: from bits to file"
+    steps:
+      - from: phys
+        to: link
+        track: up
+        label: Bits to frames
+        desc: The signal crossed the cable (or the air) and reaches the receiver's network card (PHY), which turns it back into bits. The card finds the start marker and cuts the bits into frames.
+        data:
+          signal: arrived on the wire
+          bits: 10101010...10101011
+          frames: "3"
+      - from: link
+        to: ip
+        track: up
+        label: Check and copy frames
+        desc: The card and driver check the CRC and that the destination MAC is theirs, then strip the Ethernet header. The frames are copied to RAM (DMA) and an interrupt tells the kernel they are ready.
+        data:
+          CRC: ok
+          dst MAC: mine
+          header: ETH removed
+          copied: to RAM (DMA)
+      - from: ip
+        to: tcp
+        track: up
+        label: Remove IP headers
+        desc: The kernel's IP layer checks that the destination IP is this computer and strips the IP header, which leaves 3 segments.
+        data:
+          dst IP: mine
+          header: IP removed
+          segments: "3"
+      - from: tcp
+        to: app
+        track: up
+        label: Put the bytes in order
+        desc: The kernel's TCP matches each segment to its connection (IPs and ports), puts them in order by sequence number, sends ACKs and strips the TCP header. The 4000 bytes wait in the socket receive buffer, the app reads them (Node data event), and the HTTP parser rebuilds notes.txt.
+        data:
+          buffer: 1460 + 1460 + 1080
+          bytes: "4000"
+          ACKs: sent
+          file: notes.txt rebuilt

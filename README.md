@@ -57,8 +57,39 @@ bun install
 bun run build:example          # writes dist/webrtc.html, open it in a browser
 bun run build:examples         # writes dist/webrtc.html, dist/udp.html, dist/website.html, dist/osi.html and dist/homenet.html
 bun run src/cli.ts build <file> -o <out.html>
+bun run src/cli.ts validate <file> [--json]   # check a scene, write no HTML
 bun run src/cli.ts convert <file> --to json|yaml
+bun run src/cli.ts icons                       # list the icon names, one per line
 ```
+
+`validate` prints `ok: <title> (N nodes, M steps)` and exits 0, or prints each problem and exits 1.
+With `--json` (on `validate` and `build`) the result is one JSON object:
+`{ "ok": true, "title": "...", "nodes": 4, "steps": 3 }` or `{ "ok": false, "issues": [ { "message": "...", "path": "..." } ] }`.
+
+## Use as a Claude skill
+
+The folder `skills/packetplay/` is a Claude Code skill: the instructions (`SKILL.md`), the example
+scenes and the whole tool as one file, `packetplay.js`. It needs only [Bun](https://bun.sh), with no
+clone, no `bun install` and no internet.
+
+### Install as a plugin (recommended)
+
+The repo is its own Claude Code plugin marketplace. In any project:
+
+```
+/plugin marketplace add nokri-mohammed/packetplay
+/plugin install packetplay@packetplay
+```
+
+Then ask in plain words, for example "Make an animated diagram of how DNS resolves a name". Later
+changes arrive with `/plugin update`.
+
+### Install by hand
+
+1. Build the single file: `bun run build:skill` (the built file is committed, so a plain clone already has it).
+2. Link the folder into your skills: `ln -s <path to this repo>/skills/packetplay ~/.claude/skills/packetplay`.
+   Or copy the folder into one project's `.claude/skills/`.
+3. To update after changing the tool, run `bun run build:skill` again. The symlink follows.
 
 Built with Bun and TypeScript on top of [anime.js](https://animejs.com). See the
 [design plan](docs/plans/2026-11-14-packetplay.md).

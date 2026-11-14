@@ -1,3 +1,4 @@
+import { embedded } from "./embedded.ts";
 import { HALF_H, HALF_W, TILE_H, TILE_W, layoutScene } from "./layout.ts";
 import { compileTimeline } from "./timeline.ts";
 import { renderSvg } from "./render.ts";
@@ -85,15 +86,21 @@ export async function buildHtml(scene: Scene): Promise<string> {
   const svg = renderSvg(scene, layout);
   const timeline = compileTimeline(scene, layout);
 
-  const built = await Bun.build({
-    entrypoints: [new URL("./player.ts", import.meta.url).pathname],
-    target: "browser",
-    minify: true,
-  });
-  if (!built.success || !built.outputs[0]) {
-    throw new Error("Player bundle failed: " + built.logs.map((l) => l.message).join("; "));
+  let playerJs: string;
+  if (embedded) {
+    playerJs = embedded.player;
+  } else {
+    const built = await Bun.build({
+      entrypoints: [new URL("./player.ts", import.meta.url).pathname],
+      target: "browser",
+      minify: true,
+    });
+    if (!built.success || !built.outputs[0]) {
+      throw new Error("Player bundle failed: " + built.logs.map((l) => l.message).join("; "));
+    }
+    playerJs = await built.outputs[0].text();
   }
-  const bundle = (await built.outputs[0].text()).replace(/<\/script/gi, "<\\/script");
+  const bundle = playerJs.replace(/<\/script/gi, "<\\/script");
 
   // Keep the JSON safe inside a script element: no literal "<" (covers "</script" and "<!--").
   const json = JSON.stringify(timeline).replace(/</g, "\\u003c");

@@ -1,0 +1,13 @@
+{
+  "name": "packetplay",
+  "owner": { "name": "nokri-mohammed" },
+  "metadata": { "description": "packetplay: animated network and flow diagrams from a scene file." },
+  "plugins": [
+    {
+      "name": "packetplay",
+      "source": "./",
+      "description": "Skill that writes, validates and builds animated packetplay diagrams (needs Bun).",
+      "category": "productivity"
+    }
+  ]
+}

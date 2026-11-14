@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
+title: "A home network: two switches, one router"
+
+nodes:
+  internet: { label: Internet,    icon: cloud,  at: [0, 0] }
+  router:   { label: Home router, icon: router, sub: NAT, at: [3, 3] }
+  swl:      { label: Switch, icon: switch-module, sub: left LAN, group: lan-left, at: [3, 10] }
+  l-printer: { label: Printer, icon: printer, sub: 192.0.2.11, group: lan-left, at: [1, 8] }
+  l-desktop: { label: Desktop, icon: desktop, sub: 192.0.2.12, group: lan-left, at: [1, 10] }
+  l-laptop: { label: Laptop, icon: laptop, sub: 192.0.2.13, group: lan-left, at: [5, 10] }
+  l-phone: { label: Cell Phone, icon: mobiledevice, sub: 192.0.2.14, group: lan-left, at: [3, 12] }
+  l-console: { label: Gaming Console, icon: cube, sub: 192.0.2.15, group: lan-left, at: [5, 12] }
+  swr:      { label: Switch, icon: switch-module, sub: right LAN, group: lan-right, at: [10, 3] }
+  r-console: { label: Gaming Console, icon: cube, sub: 192.0.2.21, group: lan-right, at: [8, 1] }
+  r-printer: { label: Printer, icon: printer, sub: 192.0.2.22, group: lan-right, at: [10, 1] }
+  r-laptop: { label: Laptop, icon: laptop, sub: 192.0.2.23, group: lan-right, at: [12, 3] }
+  r-desktop: { label: Desktop, icon: desktop, sub: 192.0.2.24, group: lan-right, at: [10, 5] }
+  r-phone: { label: Cell Phone, icon: mobiledevice, sub: 192.0.2.25, group: lan-right, at: [12, 5] }
+
+groups:
+  lan-left:  { label: Left LAN }
+  lan-right: { label: Right LAN }
+
+links:
+  - [internet, router]
+  - [router, swl]
+  - [router, swr]
+  - [l-printer, swl]
+  - [l-desktop, swl]
+  - [l-laptop, swl]
+  - [l-phone, swl]
+  - [l-console, swl]
+  - [r-console, swr]
+  - [r-printer, swr]
+  - [r-laptop, swr]
+  - [r-desktop, swr]
+  - [r-phone, swr]
+
+tracks:
+  web:   { label: Web traffic, color: blue }
+  print: { label: Printing, color: green }
+  local: { label: Same switch, color: orange }
+
+chapters:
+  - title: "1. A laptop opens a web page"
+    steps:
+      - from: l-laptop
+        to: internet
+        track: web
+        label: HTTP request
+        desc: The laptop asks a web server for a page. The request goes through the left switch to the router. NAT swaps the laptop's private address for the router's public one before it leaves for the Internet.
+        data:
+          src: "192.0.2.13:50100"
+          dst: "198.51.100.80:80"
+          proto: TCP
+        at:
+          router:
+            set: { src: "203.0.113.7:61000" }
+            desc: NAT replaces your private source address and port
+      - from: internet
+        to: l-laptop
+        track: web
+        label: Web page
+        desc: The page comes back to the router's public address. NAT maps it back to the laptop, and the left switch delivers it.
+        data:
+          src: "198.51.100.80:80"
+          dst: "203.0.113.7:61000"
+          proto: TCP
+        at:
+          router:
+            set: { dst: "192.0.2.13:50100" }
+            desc: NAT maps the reply back to the laptop
+
+  - title: "2. Printing across the router"
+    steps:
+      - from: l-desktop
+        to: r-printer
+        track: print
+        label: Print job
+        desc: The desktop is on the left LAN and the printer is on the right LAN. Traffic between two switches always goes through the router, so the job crosses the left switch, the router and the right switch.
+        data:
+          file: report.pdf
+          pages: "3"
+          proto: IPP
+
+  - title: "3. Two devices on the same switch"
+    steps:
+      - from: l-phone
+        to: l-console
+        track: local
+        label: Game invite
+        desc: The phone invites the console. Both hang off the left switch, so the switch forwards the message directly and the router is not involved.
+        data:
+          src: "192.0.2.14"
+          dst: "192.0.2.15"
+          proto: UDP
+
+  - title: "4. Everyone online at once"
+    steps:
+      - parallel:
+          - from: r-laptop
+            to: internet
+            mode: flow
+            track: web
+            label: Browsing
+            desc: A laptop on the right LAN streams web traffic.
+            data:
+              src: "192.0.2.23"
+              proto: TCP
+          - from: r-phone
+            to: internet
+            mode: flow
+            track: web
+            label: Browsing
+            desc: A phone on the right LAN streams web traffic at the same time. Both share the router and its single Internet link.
+            data:
+              src: "192.0.2.25"
+              proto: TCP

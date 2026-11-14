@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
+title: How a UDP message travels
+
+nodes:
+  laptop: { label: Your laptop,   icon: laptop }
+  router: { label: Your router,   icon: router, sub: NAT }
+  net:    { label: Internet,      icon: cloud }
+  dns:    { label: DNS resolver,  icon: server, sub: 198.51.100.53 }
+
+links:
+  - [laptop, router]
+  - [router, net]
+  - [net, dns]
+
+tracks:
+  query:  { label: UDP query,  color: blue }
+  answer: { label: UDP answer, color: green }
+  stream: { label: UDP stream, color: orange }
+
+chapters:
+  - title: 1. Ask a question
+    steps:
+      - from: laptop
+        to: dns
+        track: query
+        label: UDP query
+        desc: One datagram. No handshake, no connection set up first.
+        data:
+          proto: UDP
+          src: "192.0.2.20:49152"
+          dst: "198.51.100.53:53"
+          payload: "A example.com?"
+        at:
+          router:
+            set: { src: "203.0.113.7:61000" }
+            desc: NAT replaces your private source address and port
+
+  - title: 2. The answer comes back
+    steps:
+      - from: dns
+        to: laptop
+        track: answer
+        label: UDP answer
+        data:
+          proto: UDP
+          src: "198.51.100.53:53"
+          dst: "203.0.113.7:61000"
+          payload: "A 192.0.2.10"
+        at:
+          router:
+            set: { dst: "192.0.2.20:49152" }
+            desc: NAT maps the reply back to your laptop
+
+  - title: 3. A stream of datagrams
+    steps:
+      - from: laptop
+        to: dns
+        track: stream
+        label: video frames
+        mode: flow
+        both: true
+        desc: UDP just keeps sending. Lost datagrams are not repeated.
