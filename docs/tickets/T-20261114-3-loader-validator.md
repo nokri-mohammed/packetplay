@@ -47,10 +47,12 @@ CEO approved the design plan on 2026-11-14.
 
 ## Report
 
-<The agent fills this in when finished. Add the line `Status: done` (or `blocked`) at the top of
-this section, then:>
+Status: done
 
-- **Did:**
+- **Did:** Added `src/load.ts` (`parseScene(text, "yaml"|"json")`, `loadScene(path)`; errors name the file, YAML errors give `line N`, unsupported extension names the extension and `.yaml`) and `src/validate.ts` (`validateScene(unknown): Issue[]`, ajv 2020 on `schema/scene.schema.json`; schema issues first, then semantic issues; never throws). Message wording follows ticket 2's Report exactly. Appended two `export *` lines to `src/index.ts`. Tests unchanged. Nothing committed.
 - **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+  - `bun test test/load.test.ts test/validate.test.ts`: `28 pass, 0 fail, 51 expect() calls`
+  - `bun run typecheck`: `$ tsc --noEmit`, exit 0 (after the router agent added `allowImportingTsExtensions` to tsconfig; before that, `.ts` import paths in tests gave TS5097)
+  - `./scripts/check-public.sh --all`: exit 0; no em dashes in the new files
+- **Left / needs a decision:** The "no route" check in the validator uses its own small undirected BFS over `links`, not `src/route.ts`, to avoid depending on the router that was being written in parallel. It checks each leg of `from, via..., to`. The manager may prefer to reuse `routeStep` later (ticket 5 review). Schema messages are plain sentences with a dotted path, for example `"chapters[0].steps[0]": unknown key "x"`.
+- **Lessons:** TypeScript 7 requires `allowImportingTsExtensions` when tests import `../src/x.ts`.
