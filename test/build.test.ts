@@ -141,17 +141,17 @@ describe("website example", () => {
     expect(validateScene(y)).toEqual([]);
   });
 
-  test("builds a page with 5 chapters, 11 steps and the hand-calculated totalMs", async () => {
+  test("builds a page with 4 chapters, 10 steps and the hand-calculated totalMs", async () => {
     const html = await buildHtml(await loadScene(webYaml));
     expect(html).toContain("<title>How a browser loads a website</title>");
     const m = html.match(/<script type="application\/json" id="timeline-data">([\s\S]*?)<\/script>/);
     const timeline = JSON.parse(m?.[1] ?? "{}");
-    expect(timeline.chapters.length).toBe(5);
-    expect(timeline.steps.length).toBe(11);
-    // Step 1 (you to laptop) types "shop.example.com" (16 characters): 16 * 80 + 500 = 1780 ms, then
-    // 1 hop of 1750 ms, so 3530 ms. The other 10 steps are 3 hops * 1750 = 5250 ms each.
-    // 3530 + 10 * 5250 + 10 gaps * 450 = 3530 + 52500 + 4500 = 60530.
-    expect(timeline.totalMs).toBe(60530);
+    expect(timeline.chapters.length).toBe(4);
+    expect(timeline.steps.length).toBe(10);
+    // Step 1 (the DNS query, client to dns) types "shop.example.com" (16 characters): 16 * 80 + 500 = 1780 ms, then
+    // 3 hops of 1750 ms, so 1780 + 5250 = 7030 ms. The other 9 steps are 3 hops * 1750 = 5250 ms each.
+    // 7030 + 9 * 5250 + 9 gaps * 450 = 7030 + 47250 + 4050 = 58330.
+    expect(timeline.totalMs).toBe(58330);
     expect(timeline.hidden).toEqual(["web"]);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
@@ -164,13 +164,12 @@ describe("website example: hidden server", () => {
     const { layoutScene } = await import("../src/layout.ts");
     const scene = await loadScene(root + "examples/website.scene.yaml");
     const tl = compileTimeline(scene, layoutScene(scene));
-    // Step 1: 1780 ms typing + 1750 ms hop = 3530, gap 450, so the DNS query starts at 3980.
-    // The query is 3 hops: 3980 + 5250 = 9230, gap 450, so the DNS answer starts at 9680.
-    // Its hops start at 9680, 11430 and 13180. The last one arrives 1100 ms later: 14280.
+    // Step 1 (DNS query): 1780 ms typing + 3 hops * 1750 = 7030, gap 450, so the DNS answer starts at 7480.
+    // Its hops start at 7480, 9230 and 10980. The last one arrives 1100 ms later: 12080.
     const answer = tl.steps.find((s) => s.label === "DNS answer")!;
-    expect(answer.startMs).toBe(9680);
-    expect(answer.hops.map((h) => h.startMs)).toEqual([9680, 11430, 13180]);
-    expect(tl.reveals).toEqual([{ node: "web", atMs: 14280, stepId: answer.id }]);
+    expect(answer.startMs).toBe(7480);
+    expect(answer.hops.map((h) => h.startMs)).toEqual([7480, 9230, 10980]);
+    expect(tl.reveals).toEqual([{ node: "web", atMs: 12080, stepId: answer.id }]);
     expect(tl.reveals[0]!.atMs).toBe(answer.hops[2]!.endMs);
   });
 

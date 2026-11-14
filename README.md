@@ -43,7 +43,7 @@ Four examples ship, each as YAML and as JSON:
 - [examples/webrtc.scene.yaml](examples/webrtc.scene.yaml): how a WebRTC call connects.
 - [examples/udp.scene.yaml](examples/udp.scene.yaml): how a UDP message travels (NAT rewriting the
   address, then a stream of datagrams).
-- [examples/website.scene.yaml](examples/website.scene.yaml): how a browser loads a website (you type the address, then DNS
+- [examples/website.scene.yaml](examples/website.scene.yaml): how a browser loads a website (type the address, then DNS
   lookup, TCP handshake, TLS handshake, then the HTTPS request).
 - [examples/osi.scene.yaml](examples/osi.scene.yaml): the OSI layers as a real computer uses them (browser, kernel, network card),
   and how a 4000-byte file travels down to bits and back up to a file.
