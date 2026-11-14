@@ -298,11 +298,12 @@ function drawHidden(opacityOf: (id: string) => number): void {
 
 // Reveal pop: the node group scales about its centre (its transform is a translate to the centre) and
 // two rings expand from it. All of it is a pure function of the clock, so seeking works.
-// Every node can also shake (a translate before the scale, same pivot).
-const nodeGroups = new Map<string, { el: Element; orig: string }>();
+// Every node icon can also bump (a translate on the icon only).
+// The bump moves only the icon (the `use` inside the group), not the title or the IP under it.
+const nodeGroups = new Map<string, { el: Element; icon: Element | null; orig: string }>();
 for (const el of svg.querySelectorAll("g[data-node]")) {
   const id = el.getAttribute("data-node");
-  if (id) nodeGroups.set(id, { el, orig: el.getAttribute("transform") ?? "" });
+  if (id) nodeGroups.set(id, { el, icon: el.querySelector("use"), orig: el.getAttribute("transform") ?? "" });
 }
 const shakes = shakeEvents(tl);
 function drawPop(t: number | null): string {
@@ -312,9 +313,12 @@ function drawPop(t: number | null): string {
     const pop = t !== null && r ? revealPop(t, r.atMs) : { scale: 1, rings: [] };
     const sh = t !== null && !reduced ? shakeOffset(shakes.get(id), t) : { dx: 0, dy: 0 };
     let tf = g.orig;
-    if (sh.dx !== 0 || sh.dy !== 0) tf += ` translate(${sh.dx.toFixed(2)} ${sh.dy.toFixed(2)})`;
     if (pop.scale !== 1) tf += ` scale(${pop.scale.toFixed(3)})`;
     g.el.setAttribute("transform", tf);
+    if (g.icon) {
+      if (sh.dx !== 0 || sh.dy !== 0) g.icon.setAttribute("transform", `translate(${sh.dx.toFixed(2)} ${sh.dy.toFixed(2)})`);
+      else g.icon.removeAttribute("transform");
+    }
     const pos = nodePos.get(id);
     const color = r ? (stepById.get(r.stepId)?.color ?? "#6b7280") : "#6b7280";
     if (!pos) continue;
