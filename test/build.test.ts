@@ -169,15 +169,15 @@ describe("osi example", () => {
     expect(validateScene(y)).toEqual([]);
   });
 
-  test("builds a page with 2 chapters, 12 steps and the hand-calculated totalMs", async () => {
+  test("builds a page with 2 chapters, 8 steps and the hand-calculated totalMs", async () => {
     const html = await buildHtml(await loadScene(osiYaml));
     expect(html).toContain("<title>The OSI model: from a file to bits</title>");
     const m = html.match(/<script type="application\/json" id="timeline-data">([\s\S]*?)<\/script>/);
     const timeline = JSON.parse(m?.[1] ?? "{}");
     expect(timeline.chapters.length).toBe(2);
-    expect(timeline.steps.length).toBe(12);
-    // Each step is 1 hop: 1300 + 750 = 2050 ms. 12 * 2050 + 11 gaps * 500 = 24600 + 5500 = 30100.
-    expect(timeline.totalMs).toBe(30100);
+    expect(timeline.steps.length).toBe(8);
+    // Each step is 1 hop: 1300 + 750 = 2050 ms. 8 * 2050 + 7 gaps * 500 = 16400 + 3500 = 19900.
+    expect(timeline.totalMs).toBe(19900);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
   });

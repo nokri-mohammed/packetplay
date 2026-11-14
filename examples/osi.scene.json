@@ -4,58 +4,56 @@
     "app": {
       "label": "7 Application",
       "icon": "document",
-      "sub": "your file"
+      "sub": "browser or Node, user space",
+      "group": "user"
     },
-    "pres": {
-      "label": "6 Presentation",
-      "icon": "lock",
-      "sub": "format, compress, encrypt"
-    },
-    "sess": {
-      "label": "5 Session",
-      "icon": "speech",
-      "sub": "open and keep a dialogue"
-    },
-    "trans": {
+    "tcp": {
       "label": "4 Transport",
       "icon": "package-module",
-      "sub": "TCP or UDP, ports"
+      "sub": "kernel: TCP",
+      "group": "kernel"
     },
-    "net": {
+    "ip": {
       "label": "3 Network",
       "icon": "router",
-      "sub": "IP addresses"
+      "sub": "kernel: IP",
+      "group": "kernel"
     },
     "link": {
       "label": "2 Data link",
       "icon": "switch-module",
-      "sub": "MAC addresses, frames"
+      "sub": "network card and driver",
+      "group": "hardware"
     },
     "phys": {
       "label": "1 Physical",
       "icon": "tower",
-      "sub": "bits on the wire"
+      "sub": "network card (PHY)",
+      "group": "hardware"
+    }
+  },
+  "groups": {
+    "user": {
+      "label": "User space"
+    },
+    "kernel": {
+      "label": "Kernel"
+    },
+    "hardware": {
+      "label": "Hardware"
     }
   },
   "links": [
     [
       "app",
-      "pres"
+      "tcp"
     ],
     [
-      "pres",
-      "sess"
+      "tcp",
+      "ip"
     ],
     [
-      "sess",
-      "trans"
-    ],
-    [
-      "trans",
-      "net"
-    ],
-    [
-      "net",
+      "ip",
       "link"
     ],
     [
@@ -79,64 +77,38 @@
       "steps": [
         {
           "from": "app",
-          "to": "pres",
+          "to": "tcp",
           "track": "down",
-          "label": "File to send",
-          "desc": "The OSI model is a teaching model with seven layers (real stacks use the four layers of TCP/IP). Your program hands a file to the top layer, and each layer below adds its own wrapper.",
+          "label": "send() to the kernel",
+          "desc": "The browser (or Node) puts notes.txt in an HTTP POST and calls send() to hand the bytes to the kernel. Layers 5 and 6 (session, presentation) are not separate steps, because the browser does TLS and encoding itself.",
           "data": {
-            "file": "report.pdf",
-            "size": "2 MB",
-            "protocol": "HTTP upload"
+            "file": "notes.txt",
+            "bytes": "4000",
+            "message": "HTTP headers + 4000 bytes"
           }
         },
         {
-          "from": "pres",
-          "to": "sess",
-          "track": "down",
-          "label": "Format and encrypt",
-          "desc": "The presentation layer shrinks the file and scrambles it with TLS, so only the receiver can read it.",
-          "data": {
-            "compressed": "yes",
-            "encrypted": "TLS",
-            "size": "1.4 MB"
-          }
-        },
-        {
-          "from": "sess",
-          "to": "trans",
-          "track": "down",
-          "label": "Open a session",
-          "desc": "The session layer opens a conversation with the other computer and keeps track of it until it is finished.",
-          "data": {
-            "session": "42",
-            "state": "open",
-            "data": "1.4 MB"
-          }
-        },
-        {
-          "from": "trans",
-          "to": "net",
+          "from": "tcp",
+          "to": "ip",
           "track": "down",
           "label": "Cut into segments",
-          "desc": "The transport layer cuts the data into small pieces called segments. Each one gets a port number so it reaches the right program.",
+          "desc": "The kernel's TCP splits the stream into segments of at most about 1460 data bytes and adds a TCP header (ports, sequence number) to each.",
           "data": {
-            "segment": "1 of 1000",
-            "src port": "50000",
-            "dst port": "443",
-            "header": "TCP"
+            "segments": "3 (1460 + 1460 + 1080)",
+            "header": "TCP",
+            "fields": "ports, sequence number"
           }
         },
         {
-          "from": "net",
+          "from": "ip",
           "to": "link",
           "track": "down",
-          "label": "Add IP addresses",
-          "desc": "The network layer adds the sender and receiver addresses, so routers know where to send each packet.",
+          "label": "Add IP headers",
+          "desc": "The kernel's IP layer adds a header with the source and destination address to each segment. That makes 3 packets, which the kernel passes to the network driver.",
           "data": {
-            "src": "192.0.2.20",
-            "dst": "198.51.100.80",
+            "packets": "3",
             "header": "IP",
-            "unit": "packet"
+            "fields": "src IP, dst IP"
           }
         },
         {
@@ -144,12 +116,12 @@
           "to": "phys",
           "track": "down",
           "label": "Frame and bits",
-          "desc": "The data link layer wraps the packet in a frame for the next device on the network, then the physical layer turns it into bits.",
+          "desc": "The network card and its driver add an Ethernet header and a CRC to each packet, making 3 frames. The card (PHY) turns the preamble and frame into bits and sends a signal on the wire (voltage on copper, light in fibre or radio in WiFi).",
           "data": {
-            "dst MAC": "next hop",
-            "unit": "frame",
-            "trailer": "checksum",
-            "then": "bits"
+            "frames": "3 (ETH + IP + TCP + data + CRC)",
+            "bits": "10101010...10101011",
+            "then": "0110 1001 ...",
+            "signal": "voltage, light or radio"
           }
         }
       ]
@@ -161,73 +133,50 @@
           "from": "phys",
           "to": "link",
           "track": "up",
-          "label": "Bits to frame",
-          "desc": "The bits crossed the cable (or the air) and arrive at the receiver. The data link layer checks the checksum and removes the frame.",
+          "label": "Bits to frames",
+          "desc": "The signal crossed the cable (or the air) and reaches the receiver's network card (PHY), which turns it back into bits. The card finds the start marker and cuts the bits into frames.",
           "data": {
-            "unit": "frame",
-            "trailer": "checksum ok",
-            "header": "MAC removed"
+            "signal": "arrived on the wire",
+            "bits": "10101010...10101011",
+            "frames": "3"
           }
         },
         {
           "from": "link",
-          "to": "net",
+          "to": "ip",
           "track": "up",
-          "label": "Remove the frame",
-          "desc": "With the frame gone, a packet is left. The network layer checks that it is addressed to this computer.",
+          "label": "Check and copy frames",
+          "desc": "The card and driver check the CRC and that the destination MAC is theirs, then strip the Ethernet header. The frames are copied to RAM (DMA) and an interrupt tells the kernel they are ready.",
           "data": {
-            "src": "192.0.2.20",
-            "dst": "198.51.100.80",
-            "header": "IP",
-            "unit": "packet"
+            "CRC": "ok",
+            "dst MAC": "mine",
+            "header": "ETH removed",
+            "copied": "to RAM (DMA)"
           }
         },
         {
-          "from": "net",
-          "to": "trans",
+          "from": "ip",
+          "to": "tcp",
           "track": "up",
-          "label": "Remove the IP header",
-          "desc": "The transport layer reads the port number and puts the segments back in order.",
+          "label": "Remove IP headers",
+          "desc": "The kernel's IP layer checks that the destination IP is this computer and strips the IP header, which leaves 3 segments.",
           "data": {
-            "segment": "1 of 1000",
-            "src port": "50000",
-            "dst port": "443",
-            "header": "TCP"
+            "dst IP": "mine",
+            "header": "IP removed",
+            "segments": "3"
           }
         },
         {
-          "from": "trans",
-          "to": "sess",
-          "track": "up",
-          "label": "Join the segments",
-          "desc": "All 1000 segments are joined back into one block of data that belongs to the open session.",
-          "data": {
-            "session": "42",
-            "state": "open",
-            "data": "1.4 MB"
-          }
-        },
-        {
-          "from": "sess",
-          "to": "pres",
-          "track": "up",
-          "label": "Decrypt and unpack",
-          "desc": "The presentation layer decrypts the data with TLS and expands it back to its full size.",
-          "data": {
-            "decrypted": "TLS",
-            "compressed": "no",
-            "size": "2 MB"
-          }
-        },
-        {
-          "from": "pres",
+          "from": "tcp",
           "to": "app",
           "track": "up",
-          "label": "File arrives",
-          "desc": "The application layer hands the finished file to the receiving program. The file is back as it was sent.",
+          "label": "Put the bytes in order",
+          "desc": "The kernel's TCP matches each segment to its connection (IPs and ports), puts them in order by sequence number, sends ACKs and strips the TCP header. The 4000 bytes wait in the socket receive buffer, the app reads them (Node data event), and the HTTP parser rebuilds notes.txt.",
           "data": {
-            "file": "report.pdf",
-            "size": "2 MB"
+            "buffer": "1460 + 1460 + 1080",
+            "bytes": "4000",
+            "ACKs": "sent",
+            "file": "notes.txt rebuilt"
           }
         }
       ]
