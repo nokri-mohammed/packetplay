@@ -247,3 +247,28 @@ describe("homenet example", () => {
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
   });
 });
+
+describe("buildHtml compact controls", () => {
+  test("controls are Play, Restart and four speeds; zoom ids stay; no nav buttons or hint", async () => {
+    const html = await buildHtml(await loadScene(yamlPath));
+    const doc = html.slice(0, html.indexOf('<script type="application/json"'));
+    expect(doc).toContain('id="btn-play"');
+    expect(doc).toContain('id="btn-restart"');
+    const speeds = [...doc.matchAll(/data-speed="([^"]+)" aria-pressed="([^"]+)"/g)].map((m) => [m[1], m[2]]);
+    expect(speeds).toEqual([["0.5", "false"], ["1", "true"], ["1.5", "false"], ["2", "false"]]);
+    for (const id of ["zoom-in", "zoom-out", "zoom-fit"]) expect(doc).toContain(`id="${id}"`);
+    expect(doc).not.toMatch(/id="btn-(prev|next)-/);
+    expect(doc).not.toContain("Keys:");
+    expect(doc).toContain('aria-keyshortcuts="Space');
+  });
+
+  test("player maps the key shortcuts and skips buttons that are not in the page", async () => {
+    const src = readFileSync(root + "src/player.ts", "utf8");
+    expect(src).toContain("keyAction(e.key)");
+    expect(src).toContain("document.getElementById(id)?.addEventListener");
+    const core = readFileSync(root + "src/player-core.ts", "utf8");
+    for (const a of ["toggle", "nextHop", "prevHop", "nextMessage", "prevMessage", "nextChapter", "prevChapter", "faster", "slower", "restart"]) {
+      expect(core).toContain(`"${a}"`);
+    }
+  });
+});

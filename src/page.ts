@@ -14,46 +14,70 @@ const gridUri = (color: string): string => {
   return "data:image/svg+xml," + svg.replace(/</g, "%3C").replace(/>/g, "%3E");
 };
 
+// Styling inspired by Plush UI (MIT), ported to plain CSS.
 const CSS = `
 :root{--grid-img:url("${gridUri("black")}")}
 @media (prefers-color-scheme: dark){:root{--grid-img:url("${gridUri("white")}")}}
-:root{--bg:#f8fafc;--fg:#0f172a;--muted:#475569;--panel:#ffffff;--line:#cbd5e1;--accent:#2563eb;--card-bg:#ffffff}
-@media (prefers-color-scheme: dark){:root{--bg:#0b1120;--fg:#e2e8f0;--muted:#94a3b8;--panel:#111a2e;--line:#334155;--accent:#60a5fa;--card-bg:#111a2e}}
+:root{--bg:#f6f6f4;--fg:#141414;--muted:#6e6e72;--panel:#ffffff;--line:#e4e4e1;--accent:#161616;--on-accent:#ffffff;--fill:#f0f0ee;--fill-strong:#e8e8e5;--note:#2563eb;--focus:#161616;--shadow:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.04);--knob:0 1px 3px rgba(20,20,20,.16),0 2px 8px rgba(20,20,20,.06);--card-bg:#ffffff;--r-card:20px;--r-row:16px;--r-full:999px;--t:160ms}
+@media (prefers-color-scheme: dark){:root{--bg:#0e0e10;--fg:#f2f2f0;--muted:#a0a0a6;--panel:#1a1a1d;--line:#2c2c30;--accent:#f2f2f0;--on-accent:#141414;--fill:#242427;--fill-strong:#2e2e32;--note:#60a5fa;--focus:#f2f2f0;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);--knob:0 1px 3px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3);--card-bg:#1a1a1d}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1100px;margin:0 auto;padding:16px}
-h1{font-size:1.4rem;margin:0 0 12px}
-.stage{position:relative;height:min(70vh,640px);min-height:320px;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--fg);touch-action:none;cursor:grab;user-select:none}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.45 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:10px 12px}
+h1{font-size:1.25rem;font-weight:600;margin:0 0 8px}
+.stage{position:relative;height:min(70vh,640px);min-height:320px;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow);color:var(--fg);touch-action:none;cursor:grab;user-select:none}
 .stage.drag{cursor:grabbing}
 .stage .grid{position:absolute;inset:0;pointer-events:none;background-repeat:repeat;background-image:var(--grid-img)}
 .stage svg{position:absolute;inset:0;display:block;width:100%;height:100%}
-.zoombar{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:default}
-.zoombar button{min-height:36px;min-width:36px;padding:0 10px}
-#zoom-label{min-width:3.2em;text-align:center;font-size:.9rem;color:var(--muted)}
+.zoombar{position:absolute;left:10px;top:10px;display:flex;gap:2px;align-items:center;padding:2px;background:var(--panel);border-radius:var(--r-full);box-shadow:var(--knob);cursor:default}
+.zoombar button{min-height:32px;min-width:32px;padding:0 10px;background:transparent;border-radius:var(--r-full);font-size:.85rem}
+.zoombar button:hover{background:var(--fill)}
+#zoom-label{min-width:3.2em;text-align:center;font-size:.8rem;color:var(--muted)}
 .pk-bg{fill:var(--card-bg);stroke-width:1.5}
 .pk-tx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.pk-row{fill:var(--fg)}
-.caption{margin:12px 0;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:7.5em}
-.caption h2{font-size:1rem;margin:0;color:var(--muted);font-weight:600}
-.caption .step{font-size:1.15rem;font-weight:700;margin:4px 0 0}
-.caption p{margin:4px 0 0}
-.caption .note{color:var(--accent)}
-.legend{list-style:none;display:flex;flex-wrap:wrap;gap:4px 16px;margin:0 0 12px;padding:0;color:var(--muted);font-size:.9rem}
-.legend .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-.bar{position:relative;height:32px;margin:0 0 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer;touch-action:none;user-select:none}
-.bar .seg{position:absolute;top:0;bottom:0;border-right:2px solid var(--line);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.caption{margin:8px 0;padding:8px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow);min-height:7em}
+.caption h2{font-size:.85rem;margin:0;color:var(--muted);font-weight:600}
+.caption .step{font-size:1.05rem;font-weight:600;margin:2px 0 0}
+.caption p{margin:2px 0 0;font-size:.95rem;line-height:1.4}
+.caption .note{color:var(--note)}
+.legend{list-style:none;display:flex;flex-wrap:wrap;gap:2px 12px;margin:0 0 8px;padding:0;color:var(--muted);font-size:.82rem}
+.legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow)}
+.bar{position:relative;flex:1 1 200px;order:3;height:28px;min-width:0;background:var(--fill);border-radius:var(--r-full);cursor:pointer;touch-action:none;user-select:none}
+.bar .seg{position:absolute;top:0;bottom:0;border-right:2px solid var(--panel);background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .bar .mark{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid var(--panel)}
-.bar .playhead{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1.5px;background:var(--fg);border-radius:2px}
-.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.controls .group{display:flex;flex-wrap:wrap;gap:8px}
-button{font:inherit;min-height:44px;padding:0 14px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer}
-button:hover{border-color:var(--accent)}
-button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-#btn-play{min-width:84px;font-weight:700}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.hint{margin:12px 0 0;color:var(--muted);font-size:.85rem}
-@media (max-width:520px){button{padding:0 10px}}
+.bar .playhead{position:absolute;top:-3px;bottom:-3px;width:4px;margin-left:-2px;background:var(--accent);border-radius:var(--r-full);box-shadow:var(--knob)}
+#btn-play{order:1}
+#btn-restart{order:2}
+.speeds{order:4;display:flex;gap:2px;padding:3px;background:var(--fill-strong);border-radius:var(--r-full)}
+button{font:inherit;color:var(--fg);background:transparent;border:0;cursor:pointer;transition:transform var(--t) ease,background-color var(--t) ease,box-shadow var(--t) ease}
+.icon{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;padding:0}
+.icon svg{width:18px;height:18px;display:block}
+#btn-play{width:40px;height:40px;background:var(--accent);color:var(--on-accent);box-shadow:var(--knob)}
+#btn-restart{width:40px;height:40px;background:var(--fill)}
+#btn-restart:hover{background:var(--fill-strong)}
+.icon:hover{transform:scale(1.06)}
+.icon:active{transform:scale(.86)}
+#btn-play .i-pause,#btn-play[data-state="playing"] .i-play{display:none}
+#btn-play[data-state="playing"] .i-pause{display:block}
+.speeds button{height:32px;min-width:44px;padding:0 12px;border-radius:var(--r-full);font-size:.85rem;color:var(--muted)}
+.speeds button:hover{color:var(--fg)}
+.speeds button:active{transform:scale(.95)}
+.speeds button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:var(--knob)}
+button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.bar:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (max-width:640px){.bar{flex-basis:100%;order:5}.speeds{margin-left:auto}}
+@media (prefers-reduced-motion: reduce){button{transition:none}.icon:hover,.icon:active,.speeds button:active{transform:none}}
 `;
+
+const ICON = (cls: string, d: string): string =>
+  `<svg class="${cls}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">${d}</svg>`;
+const PLAY_ICON = ICON("i-play", '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>');
+const PAUSE_ICON = ICON("i-pause", '<rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/>');
+const RESTART_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5v4.6h4.6"/></svg>';
+const KEYS_HINT =
+  "Shortcuts: Space play or pause, Left and Right hop, N and P message, [ and ] chapter, + and - speed, Home restart";
 
 /** Build one self-contained HTML page (inline CSS, SVG, timeline JSON and player bundle). */
 export async function buildHtml(scene: Scene): Promise<string> {
@@ -108,21 +132,12 @@ ${svg}<div class="zoombar" role="group" aria-label="Zoom">
 <p class="note" id="cap-note"></p>
 </section>
 <ul class="legend" id="legend" aria-label="Legend"></ul>
-<div class="bar" id="bar" role="slider" tabindex="0" aria-label="Timeline"></div>
 <div class="controls" role="group" aria-label="Playback controls">
-<button type="button" id="btn-play">Play</button>
-<button type="button" id="btn-restart" aria-label="Restart">Restart</button>
-<span class="group">
-<button type="button" id="btn-prev-chapter" aria-label="Previous chapter">&lt; Chapter</button>
-<button type="button" id="btn-prev-message" aria-label="Previous message">&lt; Message</button>
-<button type="button" id="btn-prev-hop" aria-label="Previous hop">&lt; Hop</button>
-<button type="button" id="btn-next-hop" aria-label="Next hop">Hop &gt;</button>
-<button type="button" id="btn-next-message" aria-label="Next message">Message &gt;</button>
-<button type="button" id="btn-next-chapter" aria-label="Next chapter">Chapter &gt;</button>
-</span>
-<span class="group" role="group" aria-label="Speed">${speeds}</span>
+<button type="button" class="icon" id="btn-play" data-state="paused" aria-label="Play" aria-keyshortcuts="Space ArrowLeft ArrowRight N P [ ] + - Home" title="${KEYS_HINT}">${PLAY_ICON}${PAUSE_ICON}</button>
+<button type="button" class="icon" id="btn-restart" aria-label="Restart" title="Restart (Home)">${RESTART_ICON}</button>
+<div class="bar" id="bar" role="slider" tabindex="0" aria-label="Timeline"></div>
+<span class="speeds" role="group" aria-label="Speed">${speeds}</span>
 </div>
-<p class="hint">Keys: Space play or pause, Left and Right hop, N and P message, [ and ] chapter, + and - speed, Home restart. Mouse wheel zooms, drag pans, two fingers pinch.</p>
 </main>
 <script type="application/json" id="timeline-data">${json}</script>
 <script>${bundle}</script>

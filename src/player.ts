@@ -599,7 +599,7 @@ function setSpeed(s: number): void {
 
 function syncButtons(): void {
   const playing = !timer.paused;
-  playBtn.textContent = playing ? "Pause" : "Play";
+  playBtn.dataset.state = playing ? "playing" : "paused";
   playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
   for (const b of speedBtns) b.setAttribute("aria-pressed", String(Number(b.dataset.speed) === speed));
 }
@@ -615,7 +615,7 @@ const buttonActions: Record<string, Action> = {
   "btn-next-chapter": "nextChapter",
 };
 for (const [id, action] of Object.entries(buttonActions)) {
-  $<HTMLButtonElement>(id).addEventListener("click", () => act(action));
+  document.getElementById(id)?.addEventListener("click", () => act(action));
 }
 for (const b of speedBtns) {
   b.addEventListener("click", () => {
