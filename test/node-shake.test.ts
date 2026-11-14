@@ -24,21 +24,21 @@ const tl = compileTimeline(sc, layout);
 
 describe("nodeShake", () => {
   test("constants", () => {
-    expect([SHAKE_MS, SHAKE_AMP]).toEqual([450, 6]);
+    expect([SHAKE_MS, SHAKE_AMP]).toEqual([650, 6]);
   });
   test("zero before, at start, at the end and after", () => {
     expect(nodeShake(999, 1000)).toEqual({ dx: 0, dy: 0 });
     expect(nodeShake(1000, 1000)).toEqual({ dx: 0, dy: 0 });
-    expect(nodeShake(1000 + 450, 1000).dy).toBeCloseTo(0, 9);
-    expect(nodeShake(1451, 1000)).toEqual({ dx: 0, dy: 0 });
+    expect(nodeShake(1000 + 650, 1000).dy).toBeCloseTo(0, 9);
+    expect(nodeShake(1651, 1000)).toEqual({ dx: 0, dy: 0 });
   });
   test("one sixth: u = 1/6, sin(pi/6) = 0.5, dy = -6 * 0.5 = -3", () => {
-    const s = nodeShake(1000 + 75, 1000);
+    const s = nodeShake(1000 + 650 / 6, 1000);
     expect(s.dy).toBeCloseTo(-3, 9);
     expect(s.dx).toBe(0);
   });
   test("middle: u = 0.5, sin(pi/2) = 1, dy = -6 (the top of the bump)", () => {
-    expect(nodeShake(1225, 1000).dy).toBeCloseTo(-6, 9);
+    expect(nodeShake(1000 + 325, 1000).dy).toBeCloseTo(-6, 9);
   });
 });
 
@@ -46,8 +46,8 @@ describe("shakeOffset", () => {
   test("the latest event at or before t wins", () => {
     expect(shakeOffset(undefined, 100)).toEqual({ dx: 0, dy: 0 });
     expect(shakeOffset([500, 1000], 400)).toEqual({ dx: 0, dy: 0 });
-    expect(shakeOffset([500, 1000], 1000 + 75).dy).toBeCloseTo(-3, 9);
-    expect(shakeOffset([500, 600], 600 + 75).dy).toBeCloseTo(-3, 9);
+    expect(shakeOffset([500, 1000], 1000 + 650 / 6).dy).toBeCloseTo(-3, 9);
+    expect(shakeOffset([500, 600], 600 + 650 / 6).dy).toBeCloseTo(-3, 9);
   });
 });
 
@@ -85,19 +85,15 @@ describe("the dot after the shake", () => {
   test("hop edges", () => {
     expect([h0!.x2, h1!.x1, h1!.x2]).toEqual([156, 244, 356]);
   });
-  // Rest after hop 0: hop ends 1840, next starts 2490 (650 ms rest). Shake ends 1840 + 450 = 2290,
-  // so the dot is hidden from 1840 to 2289 (inside the icon) and at the far edge (244) for 2290..2490 (200 ms).
+  // Rest after hop 0: hop ends 1840, next starts 2490 (650 ms rest). The bump lasts the whole 650 ms rest,
+  // so the dot is hidden from 1840 to 2489 (inside the icon) and leaves the far edge (244) at 2490, no pause.
   test("hidden inside the icon during the bump", () => {
-    for (const t of [1840, 2000, 2289]) expect(frameAt(tl, t).packets).toEqual([]);
+    for (const t of [1840, 2000, 2489]) expect(frameAt(tl, t).packets).toEqual([]);
     const before = frameAt(tl, 1839).packets[0]!;
     expect(before.x).toBeCloseTo(156, 0); // 1 ms before arrival it is still travelling
     expect(before.y).toBe(8);
   });
-  test("far edge from the end of the shake until the next hop", () => {
-    for (const t of [2290, 2400, 2489]) {
-      const p = frameAt(tl, t).packets[0]!;
-      expect([p.x, p.y]).toEqual([244, 8]);
-    }
+  test("the dot leaves the far edge the moment the bump ends, with no pause", () => {
     const next = frameAt(tl, 2490).packets[0]!;
     expect([next.x, next.y]).toEqual([244, 8]);
   });

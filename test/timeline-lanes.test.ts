@@ -116,10 +116,11 @@ describe("timing with node dwell", () => {
       [1750, 2850],
       [3500, 4600],
     ]);
-    // Rest after hop 0 is 1100..1750: hidden while the node bumps (1100..1550), then on the far side.
+    // Rest after hop 0 is 1100..1750: hidden while the node bumps (1100..1749), then it leaves the far side at 1750.
     expect(frameAt(tl, 1500).packets).toEqual([]);
+    expect(frameAt(tl, 1749).packets).toEqual([]);
     const h1 = st.hops[1]!;
-    const rest = frameAt(tl, 1600).packets[0]!;
+    const rest = frameAt(tl, 1750).packets[0]!;
     expect([rest.x, rest.y]).toEqual([h1.x1, h1.y1]);
     const last = st.hops[2]!;
     const final = frameAt(tl, 5000);
@@ -196,8 +197,7 @@ describe("pass-through hop endpoints", () => {
     const [h0, h1] = tl.steps[0]!.hops;
     expect([h0!.x2, h1!.x1]).toEqual([156, 244]);
     expect(frameAt(tl, 1500).packets).toEqual([]); // inside the icon while it bumps
-    const rest = frameAt(tl, 1600).packets[0]!;
-    expect([rest.x, rest.y]).toEqual([244, 8]); // far side of the icon
+    expect(frameAt(tl, 1749).packets).toEqual([]);
     const next = frameAt(tl, h1!.startMs).packets[0]!;
     expect([next.x, next.y]).toEqual([244, 8]);
   });

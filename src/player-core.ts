@@ -163,13 +163,17 @@ export function revealPop(t: number, atMs: number): { scale: number; rings: { r:
   return { scale, rings };
 }
 
-/** Length (ms) and height (world px) of the bump a node makes when a packet arrives or Enter is pressed. */
-export const SHAKE_MS = 450;
+/**
+ * Length (ms) and height (world px) of the bump a node makes when a packet arrives or Enter is pressed.
+ * The length equals NODE_DWELL_MS: the dot is inside the icon for the whole bump and leaves the far side
+ * the moment the next hop starts, with no pause in between.
+ */
+export const SHAKE_MS = 650;
 export const SHAKE_AMP = 6;
 
 /**
- * A slight bump of a node that starts at `atMs`: it lifts and settles once. With u = (t - atMs) / 450:
- * dy = -6 * sin(pi * u) inside [atMs, atMs + 450], else 0. dx is always 0.
+ * A slight bump of a node that starts at `atMs`: it lifts and settles once. With u = (t - atMs) / 650:
+ * dy = -6 * sin(pi * u) inside [atMs, atMs + 650], else 0. dx is always 0.
  */
 export function nodeShake(t: number, atMs: number): { dx: number; dy: number } {
   if (t < atMs || t > atMs + SHAKE_MS) return { dx: 0, dy: 0 };
