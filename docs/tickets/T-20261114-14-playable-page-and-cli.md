@@ -109,10 +109,65 @@ on 2026-11-14. No npm publishing, no release tag (they need the CEO's approval).
 
 ## Report
 
-<The agent fills this in when finished. Add the line `Status: done` (or `blocked`) at the top of
-this section, then:>
+Status: done
 
-- **Did:**
+- **Did:** Steps 1 to 7 in order. `animejs` 4.5.0 installed with an exact pin (`"animejs": "4.5.0"`).
+  New: `src/timeline.ts`, `src/player-core.ts`, `src/player.ts`, `src/page.ts`, `src/cli.ts`,
+  `test/build.test.ts`. Changed: `src/validate.ts` (one new colour issue, existing messages
+  untouched), `package.json` (`bin`, scripts `build:example` and `cli`). No M1 or M2 behaviour
+  changed. Real anime.js v4.5.0 API used (checked in `node_modules/animejs/dist/modules/timer`):
+  `createTimer({ duration, autoplay: false, onUpdate, onComplete })`, `timer.seek(ms)`,
+  `timer.play()`, `timer.pause()`, `timer.speed = x`, `timer.currentTime`, `timer.paused`. The clock
+  is a paused timer over `0..totalMs`; it is not a timeline because nothing needs a per-property
+  tween, `frameAt` renders every frame from the time.
+  Choices: `pause: true` is detected in `onUpdate` by crossing the step's `endMs` while playing,
+  then `pause()` and `seek(endMs)`. Reduced motion uses the same timer with a synthetic clock of
+  2000 ms per step. The data card and overlay are SVG added at runtime to the inlined SVG (the
+  static SVG still has no `<style>`). Timeline JSON escapes every `<` as `\u003c`; the bundle
+  escapes `</script`.
 - **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+  - `bun test`: `139 pass, 0 fail` (135 old plus 4 new smoke tests), 11 files.
+  - `bun run typecheck`: `$ tsc --noEmit` with no errors.
+  - `bun run build:example`: `Wrote dist/webrtc.html (63513 bytes)`.
+  - `./scripts/check-public.sh --all`: exit 0.
+  - Example timeline: `totalMs` 24600, steps `c1s1:0-2400 c1s2:2800-5200 c2s1:5600-8000
+    c2s2:8400-10800 c3s1:11200-16000 c3s2:16400-21200 c4s1:21600-24600`; NAT hop data
+    `192.0.2.20:5000` then `203.0.113.7:54321` on hops 2 and 3. A track colour `banana` gives
+    `track "signal": colour "banana" is not a named colour or a hex value`.
+  - Built HTML: no `src=`, no `@import`, no `href="http`, no `fetch(`, no XMLHttpRequest, sendBeacon
+    or Worker. Every `http` string found: only `http://www.w3.org/2000/svg` (twice: the SVG
+    namespace attribute in the page and the one the player uses to create overlay elements).
+    The word `WebSocket` appears twice, both inside scene text in the timeline JSON.
+  - CLI: `bogus` command prints usage and exits 2; `--help` works; `convert` YAML to JSON equals the
+    JSON example, JSON to YAML to JSON round trips (both in the smoke test).
+- **Left / needs a decision:** Nothing blocked. NOT verified (no browser was used, by order): the
+  whole player. The CEO should open `dist/webrtc.html` and look at the list below. The timeline JSON
+  holds each step twice (in `steps` and in `chapters[].steps`), so the page is larger than needed;
+  an optimisation for later, not a bug. Nothing was committed.
+- **Lessons:** (1) `Bun.build` with `target: "browser"` tree-shakes `animejs` to about 40 KB when
+  only `createTimer` is imported, so one inline script is fine. (2) The anime.js timer `seek` on a
+  running timer fires `onUpdate` re-entrantly; the player guards with a `ticking` flag and sets its
+  last-clock value before seeking so pause points do not fire by mistake.
+
+### What the CEO should look at in the browser
+
+1. Open `dist/webrtc.html` (double click, no server). Light and dark follow the system theme.
+2. Play: the blue packet should travel laptop, router, internet, signaling server with a data card
+   (`room: 42`) next to it, and a ring should pulse at each node it reaches.
+3. Chapter 2: the card shows `from: 192.0.2.20:5000` before the router and `203.0.113.7:54321`
+   after it, and the note "Your router swaps your private address..." appears at the router.
+4. Chapter 4 (green, flow, both): streams of dots run both ways along laptop to Sam for about 3 s.
+5. Controls: Play/Pause, Restart, Hop, Message and Chapter back and next, speeds 0.5x to 2x.
+6. Timeline bar: chapter segments, a coloured dot per step, click to jump (click near a dot snaps to
+   that step), drag to scrub with mouse and with a finger on a phone. Nothing should scroll the page
+   while dragging the bar.
+7. Keys: Space, Left and Right, N and P, `[` and `]`, `+` and `-`, Home. Space on a focused button
+   should toggle once only, not twice.
+8. At the end it stops; Play then restarts from the beginning. Changing speed while playing should
+   not jump the position.
+9. Reduced motion (turn on "reduce motion" in the OS or browser dev tools): no travelling packets or
+   dots; Play advances one step about every 2 s with caption, card at the destination and a static
+   ring at the arrival node.
+10. Phone width (about 375 px): no horizontal scroll, buttons wrap, the SVG scales; the card text is
+    small there because it scales with the SVG.
+11. Check the browser console is empty and the Network tab shows no requests beyond the file itself.

@@ -76,6 +76,8 @@ function schemaIssues(scene: unknown): Issue[] {
   return out;
 }
 
+const NAMED_COLORS = new Set(["blue", "orange", "green", "red", "purple", "yellow", "pink", "teal", "gray"]);
+
 type Obj = Record<string, any>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -89,6 +91,16 @@ function semanticIssues(scene: Obj): Issue[] {
   for (const [id, n] of Object.entries(nodes)) {
     if (isObj(n) && n.group !== undefined && !has(groups, n.group)) {
       issues.push({ path: `nodes.${id}.group`, message: `node "${id}": group "${n.group}" does not exist` });
+    }
+  }
+
+  for (const [id, t] of Object.entries(tracks)) {
+    const c = isObj(t) ? t.color : undefined;
+    if (typeof c === "string" && !NAMED_COLORS.has(c) && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c)) {
+      issues.push({
+        path: `tracks.${id}.color`,
+        message: `track "${id}": colour "${c}" is not a named colour or a hex value`,
+      });
     }
   }
 

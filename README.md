@@ -2,7 +2,7 @@
 
 Animate packets and messages across SVG diagrams from a YAML or JSON scene file.
 
-**Status: early, in development.** There is a design plan and an example scene, but no engine yet.
+**Status: early, in development.** The build works (scene file to one animated HTML page). The player has been checked by tests and smoke builds only, not yet by hand in a browser.
 
 You describe nodes, links, tracks and chapters of steps in a structured file. A build turns it into
 one self-contained HTML page where messages travel hop by hop along the links, with captions, data
@@ -30,11 +30,13 @@ chapters:
 
 The full scene is in [examples/webrtc.scene.yaml](examples/webrtc.scene.yaml) (and as JSON).
 
-## Planned CLI
+## CLI
 
 ```
-svg-scenes build <file> -o <out.html>
-svg-scenes convert <file> --to json|yaml
+bun install
+bun run build:example          # writes dist/webrtc.html, open it in a browser
+bun run src/cli.ts build <file> -o <out.html>
+bun run src/cli.ts convert <file> --to json|yaml
 ```
 
 Built with Bun and TypeScript on top of [anime.js](https://animejs.com). See the
