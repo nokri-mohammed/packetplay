@@ -4,7 +4,7 @@
 - **Project:** projects/svg-scenes
 - **Opened by:** svg-scenes-manager, 2026-11-14
 - **Model:** sonnet (spec below is exact; CEO wants low token use and tests the result by hand)
-- **Status:** open
+- **Status:** done
 
 ## Goal
 
@@ -162,9 +162,78 @@ on a tester. No npm publishing or tags.
 
 ## Report
 
-<The agent fills this in when finished. Start with `Status: done` (or `blocked`), then:>
+Status: done
 
-- **Did:**
+- **Did:** Steps 1 to 7 in order. (1) schema: optional `grid` (`iso` | `none`, default `iso`), `at` text now
+  says isometric tile `[i, j]`, `gen:types` run. (2) `src/layout.ts` rewritten in tile space (exported
+  `TILE_W TILE_H HALF_W HALF_H NODE_STEP ICON_SIZE MARGIN GROUP_PAD`, output `nodes {x,y,i,j}`,
+  `groups {i0,j0,i1,j1,points}` where i0..j1 is the rectangle already grown by `GROUP_PAD`, `origin`).
+  (3) new `src/lanes.ts` (`LANE_OFFSET`, `LANE_TRIM`, `laneId`, `lane`). (4) `src/render.ts`: svg
+  `width/height 100%`, one `g.scene`, shared `<marker id="arrow">`, two `<line data-link>` per link, group
+  `<polygon data-group>`. (5) `src/timeline.ts` (`link` = lane id, lane motion coordinates, new `back`) and
+  `src/player-core.ts` (return packet of `both` moves along `back`). (6) `src/page.ts` and `src/player.ts`:
+  stage with grid div (tile data URI, black or white at 0.15 by `prefers-color-scheme`, omitted for
+  `grid: none`), wheel zoom at pointer, drag pan, two-finger pinch, `-` `+` Fit buttons with percent label,
+  fit on load, zoom 0.2 to 1.6, `backgroundSize = tile * zoom`, `backgroundPosition` follows pan and
+  `layout.origin`; overlay, packets, flow dots, pulses and the data card live in `g.scene`, card scaled
+  by `1 / zoom` and kept inside the stage. At runtime the player sets the svg viewBox to the stage pixel
+  size so user units are CSS pixels (the static viewBox stays for the file on its own). Stage geometry
+  (`data-w data-h data-ox data-oy`) is passed in data attributes. Flow dots ride the lanes (forward, and
+  `back` in reverse hop order with `both`). Node centres for pulses are read from the rendered
+  `g[data-node]` transforms. `keyAction` untouched. (7) README paragraph and example mention `grid`.
+- **Changed tests (reason):**
+  - `test/layout.test.ts`: rewritten for tile space, new constants, exact tiles of the example
+    (`client [0,2] r1 [2,2] net [4,2] stun [6,2] sig [6,4] r2 [6,0] sam [8,0]`), exact canvas size
+    1057 x 657.5, origin, group tile rectangle `[5,-1,9,1]` and point-in-rectangle rule in tile space.
+  - `test/render.test.ts`: fixtures gained `i, j, origin` and the new group shape; root attributes;
+    two lines per link with exact lane coordinates and `marker-end`; shared marker; `g.scene`; group
+    polygons with exact points and labels; example now 12 `data-link`, 1 `data-group`, viewBox
+    `0 0 1057 657.5`. Snapshot `test/__snapshots__/render.test.ts.snap` regenerated with `bun test -u`
+    (diff reviewed: scene group, polygons, lanes, markers, new node positions).
+  - `test/render-escape.test.ts`: unchanged, passes as is.
+  - `test/build.test.ts`: added two tests (iso grid default, `grid: none`). Existing test unchanged and
+    still shows only the namespace URI.
+  - New: `test/lanes.test.ts` (6 exact tests), `test/timeline-lanes.test.ts` (7 tests: lane ids,
+    coordinates, `back`, reply lanes, flow lanes, return packet on `back`, packet endpoints).
+  - `test/schema*.test.ts`: unchanged, still pass (icon enum drift test included).
 - **Verified (real output):**
-- **Left / needs a decision:**
+  - Intermediate steps: after step 1, `139 pass, 0 fail`, typecheck clean. After steps 2 and 3 the
+    suite was red by design (render and its tests still used the old layout shape: 2 render failures
+    and TS errors in `render.ts` and `render.test.ts`); step 4 fixed them. After steps 4, 5 and 6: all
+    green, typecheck clean.
+  - `bun test`: `156 pass, 0 fail, 1 snapshots, 1050 expect() calls, 13 files`.
+  - `bun run typecheck`: `tsc --noEmit` exits 0, no output.
+  - `bun run gen:types`: run twice, second output identical (idempotent).
+  - `bun run build:example`: `Wrote dist/webrtc.html (77794 bytes)`.
+  - Built HTML: `grep -o "http[^\"' )<>]*"` gives only `http://www.w3.org/2000/svg` (4 occurrences,
+    two of them inside the two grid data URIs); 12 `data-link=`, 1 `data-group=`; no `src=`, no
+    external requests.
+  - `./scripts/check-public.sh --all`: exit 0.
+  - Not run in a browser (CEO rule). Pointer, wheel and pinch code is therefore untested by machine.
+- **Left / needs a decision:** The CEO's hand test. Possible tuning after that: lane offset (8) and
+  trim (44), arrowhead size, group label position (top corner, 22 px below it), grid opacity. Group
+  region `i0..j1` is the grown rectangle, not the bare member bounds. `dist/` is ignored by git.
 - **Lessons:**
+  - A layout shape change breaks render and its fixtures at once, so layout and render cannot both be
+    green between steps 2 and 4. Next time plan layout, lanes and render as one red-to-green block.
+  - Keep SVG content in canvas units and set the runtime viewBox to the stage pixel size: zoom and pan
+    then reduce to one `translate scale` on `g.scene` and the grid math matches the reference exactly.
+  - Anything that scales with zoom but must stay readable (the data card) is placed in stage pixels
+    first, then mapped back with `scale(1 / zoom)`.
+  - The build test counts `data-node=` in the whole HTML, so the player bundle must not contain that
+    literal (use `g[data-node]` and `getAttribute`).
+- **Browser checklist for the CEO** (open `dist/webrtc.html` after `bun run build:example`):
+  1. The diagram sits on a faint isometric diamond grid, and the picture fits the stage on load.
+  2. The mouse wheel zooms around the pointer, from 20% to 160%, and the percent label follows.
+  3. Dragging the stage pans; the grid and the scene move together and the grid stays aligned with the nodes.
+  4. `+`, `-` and Fit buttons work; Fit recentres and rescales.
+  5. On a touch screen, two fingers pinch to zoom and one finger pans.
+  6. Every link shows two arrows side by side, each with an arrowhead, about 16 px apart.
+  7. In chapter 1 the request runs on one arrow and the reply (joined, waiting for Sam) on the other.
+  8. The NAT data card in chapter 2 stays the same readable size at 20% and at 160%, and stays on screen.
+  9. In chapter 4 (flow, both directions) dots run on both arrows, in opposite directions.
+  10. The "Sam's home" group is a diamond around the two right-hand nodes with its label near the top corner.
+  11. Dark mode (system setting): grid lines turn white at low opacity, arrows and text stay visible.
+  12. Phone width (about 390 px): stage is at least 320 px high, controls and timeline bar below still work.
+  13. Dragging the stage never moves the timeline bar, and scrubbing the bar never pans the stage.
+  14. Keys `=` and `-` still change speed, Space plays and pauses.

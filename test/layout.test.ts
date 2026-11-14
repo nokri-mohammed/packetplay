@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Scene } from "../src/index.ts";
-import { CELL_H, CELL_W, GROUP_PAD, ICON_SIZE, MARGIN, layoutScene } from "../src/layout.ts";
+import { GROUP_PAD, HALF_H, HALF_W, ICON_SIZE, MARGIN, NODE_STEP, TILE_H, TILE_W, layoutScene } from "../src/layout.ts";
 import { loadScene } from "../src/load.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -15,104 +15,102 @@ const mk = (nodes: Record<string, NodeSpec>, links: [string, string][] = [], gro
     chapters: [],
   }) as unknown as Scene;
 
-const cx = (col: number) => MARGIN + col * CELL_W + CELL_W / 2;
-const cy = (row: number) => MARGIN + row * CELL_H + CELL_H / 2;
-const rowOf = (y: number) => (y - MARGIN - CELL_H / 2) / CELL_H;
-const colOf = (x: number) => (x - MARGIN - CELL_W / 2) / CELL_W;
+const wx = (i: number, j: number) => (i - j) * HALF_W;
+const wy = (i: number, j: number) => (i + j) * HALF_H;
 
 describe("constants", () => {
   test("agreed values", () => {
-    expect([CELL_W, CELL_H, MARGIN, ICON_SIZE, GROUP_PAD]).toEqual([240, 200, 60, 96, 36]);
+    expect([TILE_W, TILE_H, HALF_W, HALF_H, NODE_STEP, ICON_SIZE, MARGIN, GROUP_PAD]).toEqual([
+      141.5, 81.9, 70.75, 40.95, 2, 96, 80, 1,
+    ]);
   });
 });
 
 describe("explicit at", () => {
-  test("a node with at is placed at the cell centre", () => {
+  test("a node with at keeps its tile and sits at the iso position relative to the origin", () => {
     const l = layoutScene(mk({ a: { at: [0, 0] }, b: { at: [2, 1] } }));
-    expect(l.nodes.a).toEqual({ x: 180, y: 160 });
-    expect(l.nodes.b).toEqual({ x: 660, y: 360 });
+    expect([l.nodes.a!.i, l.nodes.a!.j, l.nodes.b!.i, l.nodes.b!.j]).toEqual([0, 0, 2, 1]);
+    expect(l.nodes.a!.x).toBeCloseTo(l.origin.x + wx(0, 0), 9);
+    expect(l.nodes.a!.y).toBeCloseTo(l.origin.y + wy(0, 0), 9);
+    expect(l.nodes.b!.x).toBeCloseTo(l.origin.x + 70.75, 9);
+    expect(l.nodes.b!.y).toBeCloseTo(l.origin.y + 122.85, 9);
   });
 
   test("fractional at is used as given", () => {
     const l = layoutScene(mk({ a: { at: [0.5, 1.5] } }));
-    expect(l.nodes.a).toEqual({ x: 300, y: 460 });
+    expect([l.nodes.a!.i, l.nodes.a!.j]).toEqual([0.5, 1.5]);
+    expect(l.nodes.a!.x - l.origin.x).toBeCloseTo(-70.75, 9);
+    expect(l.nodes.a!.y - l.origin.y).toBeCloseTo(81.9, 9);
   });
 
-  test("canvas size follows the largest col and row", () => {
+  test("canvas is the bounding box of icons and labels plus the margin", () => {
     const l = layoutScene(mk({ a: { at: [0, 0] }, b: { at: [2, 1] } }));
-    expect(l.width).toBe(2 * 60 + 3 * 240);
-    expect(l.height).toBe(2 * 60 + 2 * 200);
-    expect(l.width).toBe(840);
-    expect(l.height).toBe(520);
-  });
-
-  test("fractions round up for the canvas", () => {
-    const l = layoutScene(mk({ a: { at: [0.5, 1.5] } }));
-    expect(l.width).toBe(120 + 2 * 240);
-    expect(l.height).toBe(120 + 3 * 200);
+    // world x spans -48 .. 70.75 + 48, world y spans -48 .. 122.85 + 48 + 40
+    expect(l.width).toBeCloseTo(166.75 + 160, 9);
+    expect(l.height).toBeCloseTo(258.85 + 160, 9);
+    expect(l.origin.x).toBeCloseTo(80 + 48, 9);
+    expect(l.origin.y).toBeCloseTo(80 + 48, 9);
   });
 
   test("an auto-placed node does not move a pinned node", () => {
     const l = layoutScene(mk({ a: {}, b: { at: [4, 2] } }, [["a", "b"]]));
-    expect(l.nodes.b).toEqual({ x: 1140, y: 560 });
-    expect(l.nodes.a).toEqual({ x: 180, y: 160 });
+    expect([l.nodes.b!.i, l.nodes.b!.j]).toEqual([4, 2]);
+    expect([l.nodes.a!.i, l.nodes.a!.j]).toEqual([0, 0]);
   });
 });
 
 describe("automatic placement", () => {
-  test("a single node sits in cell 0,0", () => {
+  test("a single node sits on tile 0,0 and the origin is its centre", () => {
     const l = layoutScene(mk({ a: {} }));
-    expect(l.nodes.a).toEqual({ x: 180, y: 160 });
-    expect(l.width).toBe(360);
-    expect(l.height).toBe(320);
+    expect([l.nodes.a!.i, l.nodes.a!.j]).toEqual([0, 0]);
+    expect(l.nodes.a!.x).toBe(128);
+    expect(l.nodes.a!.y).toBe(128);
+    expect(l.origin).toEqual({ x: 128, y: 128 });
+    expect(l.width).toBe(256);
+    expect(l.height).toBe(296);
   });
 
-  test("a chain gets one column per hop, all in row 0", () => {
+  test("a chain gets NODE_STEP tiles per hop along i, all on j 0", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {} }, [["a", "b"], ["b", "c"]]));
-    expect(l.nodes).toEqual({ a: { x: 180, y: 160 }, b: { x: 420, y: 160 }, c: { x: 660, y: 160 } });
-    expect(l.width).toBe(120 + 3 * 240);
-    expect(l.height).toBe(320);
+    const tiles = Object.values(l.nodes).map((n) => [n.i, n.j]);
+    expect(tiles).toEqual([[0, 0], [2, 0], [4, 0]]);
+    expect(l.nodes.b!.x).toBeCloseTo(l.nodes.a!.x + 2 * HALF_W, 9);
+    expect(l.nodes.b!.y).toBeCloseTo(l.nodes.a!.y + 2 * HALF_H, 9);
   });
 
-  test("links are undirected: the column is breadth-first depth from the first declared node", () => {
+  test("links are undirected: i is breadth-first depth times NODE_STEP from the first declared node", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {} }, [["c", "b"], ["b", "a"]]));
-    expect(l.nodes.a!.x).toBe(cx(0));
-    expect(l.nodes.b!.x).toBe(cx(1));
-    expect(l.nodes.c!.x).toBe(cx(2));
+    expect(l.nodes.a!.i).toBe(0);
+    expect(l.nodes.b!.i).toBe(2);
+    expect(l.nodes.c!.i).toBe(4);
   });
 
-  test("siblings share a column and get different integer rows, smallest row is 0", () => {
+  test("siblings share an i and get different j that are multiples of NODE_STEP, smallest j is 0", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {}, d: {} }, [["a", "b"], ["a", "c"], ["a", "d"]]));
-    for (const id of ["b", "c", "d"]) expect(l.nodes[id]!.x).toBe(cx(1));
-    const rows = ["a", "b", "c", "d"].map((id) => rowOf(l.nodes[id]!.y));
-    for (const r of rows) expect(Number.isInteger(r)).toBe(true);
-    expect(Math.min(...rows)).toBe(0);
-    const sib = ["b", "c", "d"].map((id) => rowOf(l.nodes[id]!.y));
-    expect(new Set(sib).size).toBe(3);
-    expect(l.height).toBe(120 + (Math.max(...rows) + 1) * 200);
-    expect(Math.max(...rows)).toBeGreaterThanOrEqual(2);
+    for (const id of ["b", "c", "d"]) expect(l.nodes[id]!.i).toBe(2);
+    const js = ["a", "b", "c", "d"].map((id) => l.nodes[id]!.j);
+    for (const j of js) expect(j % NODE_STEP).toBe(0);
+    expect(Math.min(...js)).toBe(0);
+    expect(new Set(["b", "c", "d"].map((id) => l.nodes[id]!.j)).size).toBe(3);
+    expect(Math.max(...js)).toBeGreaterThanOrEqual(4);
   });
 
-  test("a disconnected component starts after the last used column", () => {
+  test("a disconnected component starts after the last used depth", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {}, d: {} }, [["a", "b"], ["c", "d"]]));
-    expect(l.nodes.a!.x).toBe(cx(0));
-    expect(l.nodes.b!.x).toBe(cx(1));
-    expect(l.nodes.c!.x).toBe(cx(2));
-    expect(l.nodes.d!.x).toBe(cx(3));
-    expect(l.width).toBe(120 + 4 * 240);
+    expect([l.nodes.a!.i, l.nodes.b!.i, l.nodes.c!.i, l.nodes.d!.i]).toEqual([0, 2, 4, 6]);
   });
 
   test("an isolated node (no links) goes after the connected component", () => {
     const l = layoutScene(mk({ a: {}, b: {}, z: {} }, [["a", "b"]]));
-    expect(l.nodes.z!.x).toBe(cx(2));
+    expect(l.nodes.z!.i).toBe(4);
   });
 
-  test("no two auto-placed nodes share a cell", () => {
+  test("no two auto-placed nodes share a tile", () => {
     const l = layoutScene(
       mk({ a: {}, b: {}, c: {}, d: {}, e: {}, f: {} }, [["a", "b"], ["a", "c"], ["b", "d"], ["c", "e"], ["a", "f"]]),
     );
-    const cells = Object.values(l.nodes).map((p) => `${p.x},${p.y}`);
-    expect(new Set(cells).size).toBe(6);
+    const tiles = Object.values(l.nodes).map((p) => `${p.i},${p.j}`);
+    expect(new Set(tiles).size).toBe(6);
   });
 
   test("is deterministic", () => {
@@ -122,36 +120,43 @@ describe("automatic placement", () => {
 });
 
 describe("groups", () => {
-  const grow = ICON_SIZE / 2 + GROUP_PAD;
-
-  test("rectangle is the member bounding box grown by 84 px, plus 24 px on top", () => {
+  test("region is the member tile rectangle grown by GROUP_PAD, as four iso points in order top, right, bottom, left", () => {
     const l = layoutScene(
       mk({ a: { at: [0, 0] }, b: { at: [1, 0], group: "g" }, c: { at: [2, 1], group: "g" } }, [], { g: { label: "G" } }),
     );
-    expect(grow).toBe(84);
-    expect(l.groups.g).toEqual({
-      x: cx(1) - 84,
-      y: cy(0) - 84 - 24,
-      width: cx(2) - cx(1) + 168,
-      height: cy(1) - cy(0) + 168 + 24,
+    const g = l.groups.g!;
+    expect([g.i0, g.j0, g.i1, g.j1]).toEqual([0, -1, 3, 2]);
+    const world = [
+      [wx(0, -1), wy(0, -1)],
+      [wx(3, -1), wy(3, -1)],
+      [wx(3, 2), wy(3, 2)],
+      [wx(0, 2), wy(0, 2)],
+    ];
+    expect(g.points).toHaveLength(4);
+    g.points.forEach(([x, y], k) => {
+      expect(x).toBeCloseTo(l.origin.x + world[k]![0]!, 9);
+      expect(y).toBeCloseTo(l.origin.y + world[k]![1]!, 9);
     });
-    expect(l.groups.g).toEqual({ x: 336, y: 52, width: 408, height: 392 });
   });
 
-  test("a single-member group is the icon box plus padding", () => {
-    const l = layoutScene(mk({ a: { at: [0, 0], group: "g" } }, [], { g: { label: "G" } }));
-    expect(l.groups.g).toEqual({ x: 180 - 84, y: 160 - 108, width: 168, height: 192 });
+  test("a single-member group is the tile grown by one on every side", () => {
+    const l = layoutScene(mk({ a: { at: [3, 3], group: "g" } }, [], { g: { label: "G" } }));
+    const g = l.groups.g!;
+    expect([g.i0, g.j0, g.i1, g.j1]).toEqual([2, 2, 4, 4]);
   });
 
   test("no groups gives an empty record", () => {
     expect(layoutScene(mk({ a: {} })).groups).toEqual({});
   });
 
-  test("canvas contains every group rectangle", () => {
+  test("canvas contains every group point", () => {
     const l = layoutScene(mk({ a: { at: [0, 0], group: "g" } }, [], { g: { label: "G" } }));
-    const g = l.groups.g!;
-    expect(g.x + g.width).toBeLessThanOrEqual(l.width);
-    expect(g.y + g.height).toBeLessThanOrEqual(l.height);
+    for (const [x, y] of l.groups.g!.points) {
+      expect(x).toBeGreaterThanOrEqual(MARGIN - 1e-9);
+      expect(y).toBeGreaterThanOrEqual(MARGIN - 1e-9);
+      expect(x).toBeLessThanOrEqual(l.width - MARGIN + 1e-9);
+      expect(y).toBeLessThanOrEqual(l.height - MARGIN + 1e-9);
+    }
   });
 });
 
@@ -161,49 +166,55 @@ describe("webrtc example", () => {
     return { scene, layout: layoutScene(scene) };
   };
 
-  test("column order and exact x values", async () => {
+  test("exact tiles for every node", async () => {
     const { layout: l } = await load();
-    expect(colOf(l.nodes.client!.x)).toBe(0);
-    expect(l.nodes.client!.x).toBe(180);
-    expect(l.nodes.r1!.x).toBe(420);
-    expect(l.nodes.net!.x).toBe(660);
-    for (const id of ["stun", "sig", "r2"]) expect(l.nodes[id]!.x).toBe(900);
-    expect(l.nodes.sam!.x).toBe(1140);
-    expect(l.nodes.sam!.x).toBeGreaterThan(l.nodes.r2!.x);
-    expect(l.width).toBe(1320);
+    expect(Object.keys(l.nodes)).toEqual(["client", "r1", "net", "stun", "sig", "r2", "sam"]);
+    const tiles = Object.fromEntries(Object.entries(l.nodes).map(([id, n]) => [id, [n.i, n.j]]));
+    expect(tiles).toEqual({
+      client: [0, 2],
+      r1: [2, 2],
+      net: [4, 2],
+      stun: [6, 2],
+      sig: [6, 4],
+      r2: [6, 0],
+      sam: [8, 0],
+    });
   });
 
-  test("rows are integers, smallest is 0, and no two nodes share a cell", async () => {
+  test("j is a multiple of NODE_STEP, smallest is 0, and no two nodes share a tile", async () => {
     const { layout: l } = await load();
-    const ids = Object.keys(l.nodes);
-    expect(ids).toEqual(["client", "r1", "net", "stun", "sig", "r2", "sam"]);
-    const rows = ids.map((id) => rowOf(l.nodes[id]!.y));
-    for (const r of rows) expect(Number.isInteger(r)).toBe(true);
-    expect(Math.min(...rows)).toBe(0);
-    expect(new Set(ids.map((id) => `${l.nodes[id]!.x},${l.nodes[id]!.y}`)).size).toBe(7);
-    expect(l.height).toBe(120 + (Math.max(...rows) + 1) * 200);
+    const js = Object.values(l.nodes).map((n) => n.j);
+    for (const j of js) expect(j % NODE_STEP).toBe(0);
+    expect(Math.min(...js)).toBe(0);
+    expect(new Set(Object.values(l.nodes).map((n) => `${n.i},${n.j}`)).size).toBe(7);
   });
 
-  test("group sams-home wraps r2 and sam and no other node", async () => {
+  test("canvas position follows the iso formula and the origin", async () => {
+    const { layout: l } = await load();
+    expect(l.origin.x).toBeCloseTo(269.5, 9);
+    expect(l.origin.y).toBeCloseTo(80, 9);
+    for (const n of Object.values(l.nodes)) {
+      expect(n.x).toBeCloseTo(l.origin.x + wx(n.i, n.j), 9);
+      expect(n.y).toBeCloseTo(l.origin.y + wy(n.i, n.j), 9);
+    }
+    expect(l.width).toBeCloseTo(1057, 9);
+    expect(l.height).toBeCloseTo(657.5, 9);
+  });
+
+  test("group sams-home wraps r2 and sam and no other node (point in rectangle, tile space)", async () => {
     const { layout: l } = await load();
     const g = l.groups["sams-home"]!;
+    expect([g.i0, g.j0, g.i1, g.j1]).toEqual([5, -1, 9, 1]);
     const inside = (id: string) => {
-      const p = l.nodes[id]!;
-      return p.x >= g.x && p.x <= g.x + g.width && p.y >= g.y && p.y <= g.y + g.height;
+      const n = l.nodes[id]!;
+      return n.i >= g.i0 && n.i <= g.i1 && n.j >= g.j0 && n.j <= g.j1;
     };
     expect(inside("r2")).toBe(true);
     expect(inside("sam")).toBe(true);
     for (const id of ["client", "r1", "net", "stun", "sig"]) expect(inside(id)).toBe(false);
-    const ys = [l.nodes.r2!.y, l.nodes.sam!.y];
-    expect(g).toEqual({
-      x: 900 - 84,
-      y: Math.min(...ys) - 84 - 24,
-      width: 1140 - 900 + 168,
-      height: Math.max(...ys) - Math.min(...ys) + 168 + 24,
-    });
   });
 
-  test("canvas contains every node centre and group rectangle", async () => {
+  test("canvas contains every node centre and group point", async () => {
     const { layout: l } = await load();
     for (const p of Object.values(l.nodes)) {
       expect(p.x).toBeGreaterThanOrEqual(0);
@@ -211,11 +222,12 @@ describe("webrtc example", () => {
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(l.height);
     }
-    const g = l.groups["sams-home"]!;
-    expect(g.x).toBeGreaterThanOrEqual(0);
-    expect(g.y).toBeGreaterThanOrEqual(0);
-    expect(g.x + g.width).toBeLessThanOrEqual(l.width);
-    expect(g.y + g.height).toBeLessThanOrEqual(l.height);
+    for (const [x, y] of l.groups["sams-home"]!.points) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThanOrEqual(l.width);
+      expect(y).toBeLessThanOrEqual(l.height);
+    }
   });
 
   test("same input gives the same output", async () => {

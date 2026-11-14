@@ -8,13 +8,18 @@ You describe nodes, links, tracks and chapters of steps in a structured file. A 
 one self-contained HTML page where messages travel hop by hop along the links, with captions, data
 cards, pause, step, speed and a clickable timeline.
 
+The diagram sits on an isometric 3D grid that zooms with the mouse wheel (or pinch) and pans with a
+drag. Node `at: [i, j]` positions are isometric tile coordinates, and every link is drawn as two
+arrows side by side, one per direction, so a reply travels on the other arrow.
+
 ## Example
 
 ```yaml
 # yaml-language-server: $schema=../schema/scene.schema.json
 title: How a WebRTC call connects
+grid: iso            # or none; optional, iso is the default
 nodes:
-  client: { label: Your laptop, icon: laptop }
+  client: { label: Your laptop, icon: laptop, at: [0, 0] }   # isometric tile [i, j]
   net:    { label: Internet,    icon: cloud }
   sig:    { label: call.example.com, icon: server, sub: signaling }
 links:

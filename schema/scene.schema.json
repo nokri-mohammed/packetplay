@@ -21,6 +21,15 @@
       "minLength": 1,
       "description": "Title of the scene, shown above the diagram."
     },
+    "grid": {
+      "type": "string",
+      "enum": [
+        "iso",
+        "none"
+      ],
+      "default": "iso",
+      "description": "Background grid: iso (isometric tiles, the default) or none."
+    },
     "nodes": {
       "type": "object",
       "description": "Boxes in the diagram, keyed by node id.",
@@ -124,7 +133,7 @@
         },
         "at": {
           "type": "array",
-          "description": "Optional manual position [x, y] on the layout grid.",
+          "description": "Optional manual position [i, j] in isometric tile coordinates. Fractions are allowed.",
           "minItems": 2,
           "maxItems": 2,
           "items": {

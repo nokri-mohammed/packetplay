@@ -114,8 +114,8 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
       const rev = s.hops[s.hops.length - 1 - index] as HopTL;
       packets.push({
         stepId: s.id,
-        x: lerp(rev.x2, rev.x1, f),
-        y: lerp(rev.y2, rev.y1, f),
+        x: lerp(rev.back.x1, rev.back.x2, f),
+        y: lerp(rev.back.y1, rev.back.y2, f),
         color: s.color,
         direction: -1,
       });

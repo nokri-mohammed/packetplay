@@ -1,4 +1,4 @@
-import { layoutScene } from "./layout.ts";
+import { HALF_H, HALF_W, TILE_H, TILE_W, layoutScene } from "./layout.ts";
 import { compileTimeline } from "./timeline.ts";
 import { renderSvg } from "./render.ts";
 import type { Scene } from "./types.generated.ts";
@@ -6,7 +6,17 @@ import type { Scene } from "./types.generated.ts";
 const escHtml = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+// Isometric tile: a diamond outline. Only < > are escaped so the namespace stays readable.
+const gridUri = (color: string): string => {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${TILE_W}' height='${TILE_H}' viewBox='0 0 ${TILE_W} ${TILE_H}'>` +
+    `<polygon points='${HALF_W},0 ${TILE_W},${HALF_H} ${HALF_W},${TILE_H} 0,${HALF_H}' fill='none' stroke='${color}' stroke-opacity='0.15' stroke-width='1'/></svg>`;
+  return "data:image/svg+xml," + svg.replace(/</g, "%3C").replace(/>/g, "%3E");
+};
+
 const CSS = `
+:root{--grid-img:url("${gridUri("black")}")}
+@media (prefers-color-scheme: dark){:root{--grid-img:url("${gridUri("white")}")}}
 :root{--bg:#f8fafc;--fg:#0f172a;--muted:#475569;--panel:#ffffff;--line:#cbd5e1;--accent:#2563eb;--card-bg:#ffffff}
 @media (prefers-color-scheme: dark){:root{--bg:#0b1120;--fg:#e2e8f0;--muted:#94a3b8;--panel:#111a2e;--line:#334155;--accent:#60a5fa;--card-bg:#111a2e}}
 *{box-sizing:border-box}
@@ -14,8 +24,13 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:1100px;margin:0 auto;padding:16px}
 h1{font-size:1.4rem;margin:0 0 12px}
-.stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;color:var(--fg)}
-.stage svg{display:block;width:100%;height:auto}
+.stage{position:relative;height:min(70vh,640px);min-height:320px;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--fg);touch-action:none;cursor:grab;user-select:none}
+.stage.drag{cursor:grabbing}
+.stage .grid{position:absolute;inset:0;pointer-events:none;background-repeat:repeat;background-image:var(--grid-img)}
+.stage svg{position:absolute;inset:0;display:block;width:100%;height:100%}
+.zoombar{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:default}
+.zoombar button{min-height:36px;min-width:36px;padding:0 10px}
+#zoom-label{min-width:3.2em;text-align:center;font-size:.9rem;color:var(--muted)}
 .card-bg{fill:var(--card-bg);stroke-width:2}
 .card-tx{fill:var(--fg);font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
 .caption{margin:12px 0;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:7.5em}
@@ -76,8 +91,15 @@ export async function buildHtml(scene: Scene): Promise<string> {
 <body>
 <main>
 <h1>${title}</h1>
-<div class="stage">
-${svg}</div>
+<div class="stage" id="stage" data-w="${layout.width}" data-h="${layout.height}" data-ox="${layout.origin.x}" data-oy="${layout.origin.y}">
+${scene.grid === "none" ? "" : '<div class="grid" id="grid"></div>'}
+${svg}<div class="zoombar" role="group" aria-label="Zoom">
+<button type="button" id="zoom-out" aria-label="Zoom out">-</button>
+<span id="zoom-label" aria-live="off">100%</span>
+<button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+<button type="button" id="zoom-fit">Fit</button>
+</div>
+</div>
 <section class="caption" aria-live="polite" aria-label="Caption">
 <h2 id="cap-chapter"></h2>
 <p id="cap-chapter-desc"></p>
@@ -100,7 +122,7 @@ ${svg}</div>
 </span>
 <span class="group" role="group" aria-label="Speed">${speeds}</span>
 </div>
-<p class="hint">Keys: Space play or pause, Left and Right hop, N and P message, [ and ] chapter, + and - speed, Home restart.</p>
+<p class="hint">Keys: Space play or pause, Left and Right hop, N and P message, [ and ] chapter, + and - speed, Home restart. Mouse wheel zooms, drag pans, two fingers pinch.</p>
 </main>
 <script type="application/json" id="timeline-data">${json}</script>
 <script>${bundle}</script>

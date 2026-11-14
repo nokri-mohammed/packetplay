@@ -25,6 +25,10 @@ export interface Scene {
    */
   title: string;
   /**
+   * Background grid: iso (isometric tiles, the default) or none.
+   */
+  grid?: "iso" | "none";
+  /**
    * Boxes in the diagram, keyed by node id.
    */
   nodes: {
@@ -109,7 +113,7 @@ export interface Node {
    */
   group?: string;
   /**
-   * Optional manual position [x, y] on the layout grid.
+   * Optional manual position [i, j] in isometric tile coordinates. Fractions are allowed.
    *
    * @minItems 2
    * @maxItems 2

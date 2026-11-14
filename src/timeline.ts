@@ -1,4 +1,5 @@
 import type { Layout } from "./layout.ts";
+import { lane, laneId } from "./lanes.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
@@ -28,11 +29,14 @@ export function resolveColor(color: string): string {
 export interface HopTL {
   from: string;
   to: string;
+  /** Lane id of this hop's direction, `${from}--${to}`. */
   link: string;
   x1: number;
   y1: number;
   x2: number;
   y2: number;
+  /** The other lane of the same link (to to from), used by the return packet when `both` is set. */
+  back: { link: string; x1: number; y1: number; x2: number; y2: number };
   startMs: number;
   endMs: number;
   data: Record<string, unknown>;
@@ -89,7 +93,6 @@ function compileStep(
   const track = step.track ?? null;
   const trackDef = track !== null ? scene.tracks?.[track] : undefined;
   const color = trackDef ? resolveColor(trackDef.color) : NEUTRAL_COLOR;
-  const links = scene.links as [string, string][];
   const hopCount = path.length - 1;
   const endMs = startMs + (mode === "flow" ? FLOW_MS : hopCount * HOP_MS);
 
@@ -97,10 +100,8 @@ function compileStep(
   for (let i = 0; i < hopCount; i++) {
     const from = path[i] as string;
     const to = path[i + 1] as string;
-    const pa = layout.nodes[from];
-    const pb = layout.nodes[to];
-    if (!pa || !pb) throw new Error(`Layout has no position for hop "${from}--${to}"`);
-    const declared = links.find(([a, b]) => (a === from && b === to) || (a === to && b === from));
+    const fwd = lane(layout, from, to);
+    const rev = lane(layout, to, from);
     const data: Record<string, unknown> = { ...(step.data ?? {}) };
     for (let k = 0; k <= i; k++) {
       const set = step.at?.[path[k] as string]?.set;
@@ -109,11 +110,12 @@ function compileStep(
     const hop: HopTL = {
       from,
       to,
-      link: declared ? `${declared[0]}--${declared[1]}` : `${from}--${to}`,
-      x1: pa.x,
-      y1: pa.y,
-      x2: pb.x,
-      y2: pb.y,
+      link: laneId(from, to),
+      x1: fwd.x1,
+      y1: fwd.y1,
+      x2: fwd.x2,
+      y2: fwd.y2,
+      back: { link: rev.id, x1: rev.x1, y1: rev.y1, x2: rev.x2, y2: rev.y2 },
       startMs: mode === "flow" ? startMs : startMs + i * HOP_MS,
       endMs: mode === "flow" ? startMs + FLOW_MS : startMs + (i + 1) * HOP_MS,
       data,

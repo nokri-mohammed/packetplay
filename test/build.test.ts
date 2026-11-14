@@ -30,6 +30,26 @@ describe("buildHtml", () => {
   });
 });
 
+describe("buildHtml grid and zoom", () => {
+  test("iso grid is the default: grid div, two tile data URIs, zoom controls, 12 lanes", async () => {
+    const html = await buildHtml(await loadScene(yamlPath));
+    expect(html).toContain('<div class="grid" id="grid"></div>');
+    expect(html.match(/data:image\/svg\+xml,/g)?.length).toBe(2);
+    expect(html).toContain("points='70.75,0 141.5,40.95 70.75,81.9 0,40.95'");
+    for (const id of ["zoom-in", "zoom-out", "zoom-fit", "zoom-label"]) expect(html).toContain(`id="${id}"`);
+    expect(html).toMatch(/<div class="stage" id="stage" data-w="1057" data-h="657.5" data-ox="269.5" data-oy="80">/);
+    expect(html.match(/data-link=/g)?.length).toBe(12);
+    expect(html.match(/data-group=/g)?.length).toBe(1);
+  });
+
+  test("grid none leaves out the grid div but keeps zoom controls", async () => {
+    const scene = { ...(await loadScene(yamlPath)), grid: "none" } as Awaited<ReturnType<typeof loadScene>>;
+    const html = await buildHtml(scene);
+    expect(html).not.toContain('<div class="grid"');
+    expect(html).toContain('id="zoom-fit"');
+  });
+});
+
 describe("cli convert", () => {
   const run = async (args: string[]) => {
     const p = Bun.spawn(["bun", "run", root + "src/cli.ts", ...args], { stdout: "pipe", stderr: "pipe" });

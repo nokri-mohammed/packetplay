@@ -1,60 +1,51 @@
 import type { Scene } from "./types.generated.ts";
 
-export const CELL_W = 240;
-export const CELL_H = 200;
-export const MARGIN = 60;
+export const TILE_W = 141.5;
+export const TILE_H = 81.9;
+export const HALF_W = TILE_W / 2;
+export const HALF_H = TILE_H / 2;
+export const NODE_STEP = 2;
 export const ICON_SIZE = 96;
-export const GROUP_PAD = 36;
-const LABEL_EXTRA = 24;
-
-export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+export const MARGIN = 80;
+export const GROUP_PAD = 1;
+const LABEL_BELOW = 40;
 
 export interface Layout {
   width: number;
   height: number;
-  nodes: Record<string, { x: number; y: number }>;
-  groups: Record<string, Rect>;
+  nodes: Record<string, { x: number; y: number; i: number; j: number }>;
+  groups: Record<string, { i0: number; j0: number; i1: number; j1: number; points: [number, number][] }>;
+  origin: { x: number; y: number };
 }
 
-type Cell = { col: number; row: number };
+type Tile = { i: number; j: number };
+type TileRect = { i0: number; j0: number; i1: number; j1: number };
 
-const GROW = ICON_SIZE / 2 + GROUP_PAD;
-const cellX = (col: number) => MARGIN + col * CELL_W + CELL_W / 2;
-const cellY = (row: number) => MARGIN + row * CELL_H + CELL_H / 2;
+const worldX = (i: number, j: number) => (i - j) * HALF_W;
+const worldY = (i: number, j: number) => (i + j) * HALF_H;
 
-function groupRect(cells: Cell[]): Rect {
-  const xs = cells.map((c) => cellX(c.col));
-  const ys = cells.map((c) => cellY(c.row));
-  const minX = Math.min(...xs);
-  const minY = Math.min(...ys);
+function tileRect(tiles: Tile[]): TileRect {
+  const is = tiles.map((t) => t.i);
+  const js = tiles.map((t) => t.j);
   return {
-    x: minX - GROW,
-    y: minY - GROW - LABEL_EXTRA,
-    width: Math.max(...xs) - minX + 2 * GROW,
-    height: Math.max(...ys) - minY + 2 * GROW + LABEL_EXTRA,
+    i0: Math.min(...is) - GROUP_PAD,
+    j0: Math.min(...js) - GROUP_PAD,
+    i1: Math.max(...is) + GROUP_PAD,
+    j1: Math.max(...js) + GROUP_PAD,
   };
 }
 
-const inside = (r: Rect, c: Cell) => {
-  const x = cellX(c.col);
-  const y = cellY(c.row);
-  return x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
-};
+const inside = (r: TileRect, t: Tile) => t.i >= r.i0 && t.i <= r.i1 && t.j >= r.j0 && t.j <= r.j1;
 
-/** Pure, deterministic grid layout. Assumes the scene passed validateScene. */
+/** Pure, deterministic isometric layout. Assumes the scene passed validateScene. */
 export function layoutScene(scene: Scene): Layout {
   const ids = Object.keys(scene.nodes);
   const nodes = scene.nodes as Record<string, { at?: [number, number]; group?: string }>;
-  const cells: Record<string, Cell> = {};
-  const cellOf = (id: string): Cell => {
-    const c = cells[id];
-    if (!c) throw new Error(`layout: node "${id}" has no cell`);
-    return c;
+  const tiles: Record<string, Tile> = {};
+  const tileOf = (id: string): Tile => {
+    const t = tiles[id];
+    if (!t) throw new Error(`layout: node "${id}" has no tile`);
+    return t;
   };
   const at = (id: string) => nodes[id]?.at;
   const groupOf = (id: string) => nodes[id]?.group;
@@ -62,7 +53,7 @@ export function layoutScene(scene: Scene): Layout {
 
   for (const id of ids) {
     const pin = at(id);
-    if (pin) cells[id] = { col: pin[0], row: pin[1] };
+    if (pin) tiles[id] = { i: pin[0], j: pin[1] };
     else auto.add(id);
   }
 
@@ -73,62 +64,63 @@ export function layoutScene(scene: Scene): Layout {
   }
 
   const taken = new Set<string>();
-  for (const id of ids) if (!auto.has(id)) taken.add(`${cellOf(id).col},${cellOf(id).row}`);
+  for (const id of ids) if (!auto.has(id)) taken.add(`${tileOf(id).i},${tileOf(id).j}`);
 
   const placed = new Set<string>(ids.filter((id) => !auto.has(id)));
 
-  // Would putting `id` at `cell` break the "only members inside a group" rule?
-  const violates = (id: string, cell: Cell) => {
+  // Would putting `id` on `tile` break the "only members inside a group" rule?
+  const violates = (id: string, tile: Tile) => {
     const groups = new Set(ids.map(groupOf).filter((g): g is string => !!g));
     for (const g of groups) {
-      const members = ids.filter((m) => groupOf(m) === g && placed.has(m)).map((m) => cellOf(m));
+      const members = ids.filter((m) => groupOf(m) === g && placed.has(m)).map((m) => tileOf(m));
       if (groupOf(id) === g) {
-        const rect = groupRect([...members, cell]);
-        for (const o of ids) if (o !== id && placed.has(o) && groupOf(o) !== g && inside(rect, cellOf(o))) return true;
-      } else if (members.length > 0 && inside(groupRect(members), cell)) {
+        const rect = tileRect([...members, tile]);
+        for (const o of ids) if (o !== id && placed.has(o) && groupOf(o) !== g && inside(rect, tileOf(o))) return true;
+      } else if (members.length > 0 && inside(tileRect(members), tile)) {
         return true;
       }
     }
     return false;
   };
 
-  const pick = (id: string, col: number, preferred: number): number => {
+  const pick = (id: string, i: number, preferred: number): number => {
     for (let d = 0; d <= ids.length * 2 + 2; d++) {
-      for (const row of d === 0 ? [preferred] : [preferred + d, preferred - d]) {
-        if (taken.has(`${col},${row}`)) continue;
-        if (violates(id, { col, row })) continue;
-        return row;
+      const off = d * NODE_STEP;
+      for (const j of d === 0 ? [preferred] : [preferred + off, preferred - off]) {
+        if (taken.has(`${i},${j}`)) continue;
+        if (violates(id, { i, j })) continue;
+        return j;
       }
     }
-    for (let row = preferred; ; row++) if (!taken.has(`${col},${row}`)) return row;
+    for (let j = preferred; ; j += NODE_STEP) if (!taken.has(`${i},${j}`)) return j;
   };
 
-  const place = (id: string, col: number, preferred: number) => {
-    const row = pick(id, col, preferred);
-    cells[id] = { col, row };
-    taken.add(`${col},${row}`);
+  const place = (id: string, i: number, preferred: number) => {
+    const j = pick(id, i, preferred);
+    tiles[id] = { i, j };
+    taken.add(`${i},${j}`);
     placed.add(id);
   };
 
-  let nextCol = 0;
+  let nextI = 0;
   for (const start of ids) {
-    if (!auto.has(start) || start in cells) continue;
+    if (!auto.has(start) || start in tiles) continue;
     const parent: Record<string, string | null> = { [start]: null };
     const depth: Record<string, number> = { [start]: 0 };
     const queue = [start];
     let maxDepth = 0;
-    for (let i = 0; i < queue.length; i++) {
-      const cur = queue[i] as string;
-      const col = nextCol + (depth[cur] ?? 0);
+    for (let q = 0; q < queue.length; q++) {
+      const cur = queue[q] as string;
+      const i = nextI + NODE_STEP * (depth[cur] ?? 0);
       let preferred = 0;
       const p = parent[cur];
-      if (p) preferred = cellOf(p).row;
+      if (p) preferred = tileOf(p).j;
       else {
-        // group members share the row of an already placed groupmate, if any
+        // group members share the j of an already placed groupmate, if any
         const mate = ids.find((m) => placed.has(m) && auto.has(m) && groupOf(m) && groupOf(m) === groupOf(cur));
-        if (mate) preferred = cellOf(mate).row;
+        if (mate) preferred = tileOf(mate).j;
       }
-      place(cur, col, preferred);
+      place(cur, i, preferred);
       for (const n of adj[cur] ?? []) {
         if (!auto.has(n) || n in depth) continue;
         depth[n] = (depth[cur] ?? 0) + 1;
@@ -137,31 +129,67 @@ export function layoutScene(scene: Scene): Layout {
         queue.push(n);
       }
     }
-    nextCol += maxDepth + 1;
+    nextI += NODE_STEP * (maxDepth + 1);
   }
 
-  // Normalise auto rows so the smallest is 0.
-  const autoRows = [...auto].map((id) => cellOf(id).row);
-  if (autoRows.length) {
-    const shift = Math.min(...autoRows);
-    for (const id of auto) cellOf(id).row -= shift;
+  // Normalise auto j so the smallest is 0.
+  const autoJs = [...auto].map((id) => tileOf(id).j);
+  if (autoJs.length) {
+    const shift = Math.min(...autoJs);
+    for (const id of auto) tileOf(id).j -= shift;
   }
+
+  const groupRects: Record<string, TileRect> = {};
+  for (const g of Object.keys(scene.groups ?? {})) {
+    const members = ids.filter((id) => groupOf(id) === g).map((id) => tileOf(id));
+    if (members.length) groupRects[g] = tileRect(members);
+  }
+  const worldPoints = (r: TileRect): [number, number][] => [
+    [worldX(r.i0, r.j0), worldY(r.i0, r.j0)],
+    [worldX(r.i1, r.j0), worldY(r.i1, r.j0)],
+    [worldX(r.i1, r.j1), worldY(r.i1, r.j1)],
+    [worldX(r.i0, r.j1), worldY(r.i0, r.j1)],
+  ];
+
+  // Bounding box in world px of icons, labels and group points.
+  const half = ICON_SIZE / 2;
+  const xs: number[] = [0];
+  const ys: number[] = [0];
+  for (const id of ids) {
+    const t = tileOf(id);
+    const wx = worldX(t.i, t.j);
+    const wy = worldY(t.i, t.j);
+    xs.push(wx - half, wx + half);
+    ys.push(wy - half, wy + half + LABEL_BELOW);
+  }
+  for (const r of Object.values(groupRects)) {
+    for (const [x, y] of worldPoints(r)) {
+      xs.push(x);
+      ys.push(y);
+    }
+  }
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const ox = MARGIN - minX;
+  const oy = MARGIN - minY;
 
   const outNodes: Layout["nodes"] = {};
-  for (const id of ids) outNodes[id] = { x: cellX(cellOf(id).col), y: cellY(cellOf(id).row) };
-
+  for (const id of ids) {
+    const t = tileOf(id);
+    outNodes[id] = { x: worldX(t.i, t.j) + ox, y: worldY(t.i, t.j) + oy, i: t.i, j: t.j };
+  }
   const groups: Layout["groups"] = {};
-  for (const g of Object.keys(scene.groups ?? {})) {
-    const members = ids.filter((id) => groupOf(id) === g).map((id) => cellOf(id));
-    if (members.length) groups[g] = groupRect(members);
+  for (const [g, r] of Object.entries(groupRects)) {
+    groups[g] = { ...r, points: worldPoints(r).map(([x, y]) => [x + ox, y + oy] as [number, number]) };
   }
 
-  const maxCol = ids.length ? Math.max(...ids.map((id) => Math.ceil(cellOf(id).col))) : 0;
-  const maxRow = ids.length ? Math.max(...ids.map((id) => Math.ceil(cellOf(id).row))) : 0;
   return {
-    width: 2 * MARGIN + (maxCol + 1) * CELL_W,
-    height: 2 * MARGIN + (maxRow + 1) * CELL_H,
+    width: maxX - minX + 2 * MARGIN,
+    height: maxY - minY + 2 * MARGIN,
     nodes: outNodes,
     groups,
+    origin: { x: ox, y: oy },
   };
 }

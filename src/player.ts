@@ -30,7 +30,7 @@ const $ = <T extends Element>(id: string): T => {
 };
 
 const tl = JSON.parse($("timeline-data").textContent ?? "{}") as Timeline;
-const svg = document.querySelector("svg") as SVGSVGElement;
+const svg = document.querySelector("#stage svg") as SVGSVGElement;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const nSteps = tl.steps.length;
 const clockTotal = Math.max(1, reduced ? nSteps * DWELL_MS : tl.totalMs);
@@ -38,56 +38,124 @@ const clockTotal = Math.max(1, reduced ? nSteps * DWELL_MS : tl.totalMs);
 const esc = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+// ---------------------------------------------------------------- view (zoom and pan)
+
+const TILE_W = 141.5;
+const TILE_H = 81.9;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 1.6;
+
+const stage = $<HTMLElement>("stage");
+const grid = document.getElementById("grid");
+const zoomLabel = $<HTMLElement>("zoom-label");
+const num = (name: string): number => Number(stage.dataset[name] ?? 0);
+const W = num("w");
+const H = num("h");
+const ORIGIN = { x: num("ox"), y: num("oy") };
+
+// Canvas point (X, Y) is at stage pixel (tx + zoom * X, ty + zoom * Y). The SVG viewBox is set to
+// the stage size in pixels, so user units are CSS pixels and nothing else rescales the scene.
+let zoom = 1;
+let tx = 0;
+let ty = 0;
+let sw = 0;
+let sh = 0;
+const clampZoom = (z: number): number => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+
+function applyView(): void {
+  scene.setAttribute("transform", `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${zoom.toFixed(4)})`);
+  zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+  if (grid) {
+    grid.style.backgroundSize = `${TILE_W * zoom}px ${TILE_H * zoom}px`;
+    // Tile (0,0) centre stays under the scene origin.
+    grid.style.backgroundPosition = `${tx + ORIGIN.x * zoom - (TILE_W * zoom) / 2}px ${ty + ORIGIN.y * zoom - (TILE_H * zoom) / 2}px`;
+  }
+  if (lastFrame) drawOverlay(lastFrame); // the data card is scaled by 1 / zoom
+}
+
+function measure(): boolean {
+  const r = stage.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return false;
+  sw = r.width;
+  sh = r.height;
+  svg.setAttribute("viewBox", `0 0 ${sw} ${sh}`);
+  return true;
+}
+
+function fit(): void {
+  if (!measure()) return;
+  zoom = clampZoom(Math.min(sw / W, sh / H) * 0.92);
+  tx = (sw - W * zoom) / 2;
+  ty = (sh - H * zoom) / 2;
+  applyView();
+}
+
+function zoomBy(px: number, py: number, factor: number): void {
+  const nz = clampZoom(zoom * factor);
+  const wx = (px - tx) / zoom;
+  const wy = (py - ty) / zoom;
+  tx = px - wx * nz;
+  ty = py - wy * nz;
+  zoom = nz;
+}
+
 // ---------------------------------------------------------------- overlay
 
 const SVGNS = "http://www.w3.org/2000/svg";
+const scene = svg.querySelector("g.scene") as SVGGElement;
 const overlay = document.createElementNS(SVGNS, "g");
 overlay.setAttribute("pointer-events", "none");
-svg.appendChild(overlay);
-const vb = svg.viewBox.baseVal;
+scene.appendChild(overlay);
 
+// Node centres come from the rendered SVG (the timeline only knows lane coordinates).
 const nodePos = new Map<string, { x: number; y: number }>();
-for (const s of tl.steps) {
-  for (const h of s.hops) {
-    nodePos.set(h.from, { x: h.x1, y: h.y1 });
-    nodePos.set(h.to, { x: h.x2, y: h.y2 });
-  }
+for (const g of svg.querySelectorAll("g[data-node]")) {
+  const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute("transform") ?? "");
+  const id = g.getAttribute("data-node");
+  if (m && id) nodePos.set(id, { x: Number(m[1]), y: Number(m[2]) });
 }
+const stepById = new Map<string, StepTL>(tl.steps.map((s) => [s.id, s]));
 
-function pointAt(pts: { x: number; y: number }[], cum: number[], s: number) {
-  for (let i = 1; i < pts.length; i++) {
-    const end = cum[i] as number;
+type Seg = { x1: number; y1: number; x2: number; y2: number };
+
+function pointOnSegs(segs: Seg[], cum: number[], s: number) {
+  for (let i = 0; i < segs.length; i++) {
+    const end = cum[i + 1] as number;
     if (s <= end) {
-      const start = cum[i - 1] as number;
+      const start = cum[i] as number;
       const f = end === start ? 0 : (s - start) / (end - start);
-      const a = pts[i - 1] as { x: number; y: number };
-      const b = pts[i] as { x: number; y: number };
-      return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
+      const g = segs[i] as Seg;
+      return { x: g.x1 + (g.x2 - g.x1) * f, y: g.y1 + (g.y2 - g.y1) * f };
     }
   }
-  return pts[pts.length - 1] as { x: number; y: number };
+  const g = segs[segs.length - 1] as Seg;
+  return { x: g.x2, y: g.y2 };
 }
 
-function flowDots(path: string[], color: string, both: boolean, progress: number): string {
-  const pts = path.map((id) => nodePos.get(id)).filter((p): p is { x: number; y: number } => !!p);
-  if (pts.length < 2) return "";
+function cumulative(segs: Seg[]): number[] {
   const cum = [0];
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1] as { x: number; y: number };
-    const b = pts[i] as { x: number; y: number };
-    cum.push((cum[i - 1] as number) + Math.hypot(b.x - a.x, b.y - a.y));
-  }
-  const total = cum[cum.length - 1] as number;
+  for (const g of segs) cum.push((cum[cum.length - 1] as number) + Math.hypot(g.x2 - g.x1, g.y2 - g.y1));
+  return cum;
+}
+
+// Flow dots ride the lanes: the forward lanes of every hop, and with `both` the back lanes in
+// reverse hop order.
+function flowDots(stepId: string, color: string, both: boolean, progress: number): string {
+  const step = stepById.get(stepId);
+  if (!step || step.hops.length === 0) return "";
+  const fwd: Seg[] = step.hops.map((h) => ({ x1: h.x1, y1: h.y1, x2: h.x2, y2: h.y2 }));
+  const back: Seg[] = [...step.hops].reverse().map((h) => ({ x1: h.back.x1, y1: h.back.y1, x2: h.back.x2, y2: h.back.y2 }));
+  const cf = cumulative(fwd);
+  const cb = cumulative(back);
+  const total = cf[cf.length - 1] as number;
   const offset = ((progress * FLOW_MS) / 1000) * FLOW_SPEED;
   const start = offset % FLOW_SPACING;
+  const dot = (p: { x: number; y: number }) =>
+    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="${color}" fill-opacity="0.9"/>`;
   let out = "";
-  for (let s = start; s <= total; s += FLOW_SPACING) {
-    const p = pointAt(pts, cum, s);
-    out += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="${color}" fill-opacity="0.9"/>`;
-    if (both) {
-      const q = pointAt(pts, cum, total - s);
-      out += `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="5" fill="${color}" fill-opacity="0.9"/>`;
-    }
+  for (let d = start; d <= total; d += FLOW_SPACING) {
+    out += dot(pointOnSegs(fwd, cf, d));
+    if (both) out += dot(pointOnSegs(back, cb, d));
   }
   return out;
 }
@@ -101,21 +169,30 @@ function cardMarkup(x: number, y: number, color: string, data: Record<string, un
   if (lines.length === 0) return "";
   const w = Math.max(...lines.map((l) => l.length)) * 7.4 + 18;
   const h = lines.length * 18 + 12;
-  let cx = x + 16;
-  let cy = y - h - 12;
-  if (cx + w > vb.width - 4) cx = x - w - 16;
-  cx = Math.max(4, Math.min(cx, vb.width - w - 4));
-  cy = Math.max(4, Math.min(cy, vb.height - h - 4));
+  // Work in stage pixels so the card keeps its size and stays on screen at any zoom, then map the
+  // corner back into canvas units and scale the card by 1 / zoom.
+  const px = tx + x * zoom;
+  const py = ty + y * zoom;
+  let cx = px + 16;
+  let cy = py - h - 12;
+  if (cx + w > sw - 4) cx = px - w - 16;
+  cx = Math.max(4, Math.min(cx, sw - w - 4));
+  cy = Math.max(4, Math.min(cy, sh - h - 4));
   const text = lines
-    .map((l, i) => `<text class="card-tx" x="${(cx + 9).toFixed(1)}" y="${(cy + 22 + i * 18).toFixed(1)}">${esc(l)}</text>`)
+    .map((l, i) => `<text class="card-tx" x="9" y="${22 + i * 18}">${esc(l)}</text>`)
     .join("");
   return (
-    `<rect class="card-bg" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="8" stroke="${color}"/>` +
-    text
+    `<g transform="translate(${((cx - tx) / zoom).toFixed(2)} ${((cy - ty) / zoom).toFixed(2)}) scale(${(1 / zoom).toFixed(4)})">` +
+    `<rect class="card-bg" width="${w.toFixed(1)}" height="${h}" rx="8" stroke="${color}"/>` +
+    text +
+    `</g>`
   );
 }
 
+let lastFrame: Frame | null = null;
+
 function drawOverlay(f: Frame): void {
+  lastFrame = f;
   let out = "";
   for (const p of f.pulses) {
     const pos = nodePos.get(p.node);
@@ -123,7 +200,7 @@ function drawOverlay(f: Frame): void {
     const k = Math.min(1, p.ageMs / PULSE_MS);
     out += `<circle cx="${pos.x}" cy="${pos.y}" r="${(48 + 40 * k).toFixed(1)}" fill="none" stroke="${p.color}" stroke-width="4" stroke-opacity="${(1 - k).toFixed(2)}"/>`;
   }
-  for (const fl of f.flows) out += flowDots(fl.path, fl.color, fl.both, fl.progress);
+  for (const fl of f.flows) out += flowDots(fl.stepId, fl.color, fl.both, fl.progress);
   for (const p of f.packets) {
     out += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9" fill="${p.color}" stroke="#fff" stroke-width="2"/>`;
   }
@@ -399,7 +476,76 @@ const endDrag = () => {
 bar.addEventListener("pointerup", endDrag);
 bar.addEventListener("pointercancel", endDrag);
 
+// ---------------------------------------------------------------- stage: wheel, drag, pinch
+
+const rel = (e: PointerEvent | WheelEvent) => {
+  const r = stage.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+};
+
+stage.addEventListener(
+  "wheel",
+  (e) => {
+    e.preventDefault();
+    const p = rel(e);
+    zoomBy(p.x, p.y, e.deltaY < 0 ? 1.1 : 1 / 1.1);
+    applyView();
+  },
+  { passive: false },
+);
+
+const pointers = new Map<number, { x: number; y: number }>();
+stage.addEventListener("pointerdown", (e) => {
+  if ((e.target as Element).closest(".zoombar")) return;
+  pointers.set(e.pointerId, rel(e));
+  stage.setPointerCapture(e.pointerId);
+  stage.classList.add("drag");
+});
+stage.addEventListener("pointermove", (e) => {
+  const prev = pointers.get(e.pointerId);
+  if (!prev) return;
+  const before = [...pointers.values()];
+  const cur = rel(e);
+  pointers.set(e.pointerId, cur);
+  if (pointers.size === 1) {
+    tx += cur.x - prev.x;
+    ty += cur.y - prev.y;
+  } else if (pointers.size === 2) {
+    const after = [...pointers.values()];
+    const [a0, b0] = before as [{ x: number; y: number }, { x: number; y: number }];
+    const [a1, b1] = after as [{ x: number; y: number }, { x: number; y: number }];
+    const d0 = Math.hypot(b0.x - a0.x, b0.y - a0.y);
+    const d1 = Math.hypot(b1.x - a1.x, b1.y - a1.y);
+    const m0 = { x: (a0.x + b0.x) / 2, y: (a0.y + b0.y) / 2 };
+    const m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 };
+    if (d0 > 0) zoomBy(m0.x, m0.y, d1 / d0);
+    tx += m1.x - m0.x;
+    ty += m1.y - m0.y;
+  }
+  applyView();
+});
+const endPointer = (e: PointerEvent) => {
+  pointers.delete(e.pointerId);
+  if (pointers.size === 0) stage.classList.remove("drag");
+};
+stage.addEventListener("pointerup", endPointer);
+stage.addEventListener("pointercancel", endPointer);
+
+$<HTMLButtonElement>("zoom-in").addEventListener("click", () => {
+  zoomBy(sw / 2, sh / 2, 1.25);
+  applyView();
+});
+$<HTMLButtonElement>("zoom-out").addEventListener("click", () => {
+  zoomBy(sw / 2, sh / 2, 0.8);
+  applyView();
+});
+$<HTMLButtonElement>("zoom-fit").addEventListener("click", fit);
+new ResizeObserver(() => {
+  if (measure()) applyView();
+}).observe(stage);
+
 // ---------------------------------------------------------------- start
 
+fit();
 render(0);
 syncButtons();

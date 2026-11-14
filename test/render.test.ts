@@ -40,8 +40,9 @@ const scene = (over: Partial<Record<string, unknown>> = {}): Scene =>
 const layout2: Layout = {
   width: 600,
   height: 320,
-  nodes: { a: { x: 180, y: 160 }, b: { x: 420, y: 160 } },
+  nodes: { a: { x: 180, y: 160, i: 0, j: 0 }, b: { x: 420, y: 160, i: 2, j: 0 } },
   groups: {},
+  origin: { x: 180, y: 160 },
 };
 
 const render = (s: Scene = scene(), l: Layout = layout2) => renderSvg(s, l, { icons: fakeIcon });
@@ -53,7 +54,10 @@ describe("root and title", () => {
     expect(root.name).toBe("svg");
     expect(root.attrs).toEqual({
       xmlns: "http://www.w3.org/2000/svg",
+      width: "100%",
+      height: "100%",
       viewBox: "0 0 600 320",
+      preserveAspectRatio: "xMidYMid meet",
       role: "img",
       "aria-label": "Two nodes",
     });
@@ -84,7 +88,7 @@ describe("defs", () => {
 
   test("symbols sort by name even when declared in another order", () => {
     const s = scene({ nodes: { z: { label: "Z", icon: "server" }, y: { label: "Y", icon: "cloud" } }, links: [] });
-    const l: Layout = { width: 600, height: 320, nodes: { z: { x: 180, y: 160 }, y: { x: 420, y: 160 } }, groups: {} };
+    const l: Layout = { ...layout2, nodes: { z: { x: 180, y: 160, i: 0, j: 0 }, y: { x: 420, y: 160, i: 2, j: 0 } } };
     expect(find(render(s, l), "symbol").map((t) => t.attrs.id)).toEqual(["icon-cloud", "icon-server"]);
   });
 
@@ -132,11 +136,40 @@ describe("nodes and links", () => {
     expect(svg).toMatch(/<text class="sub"[^>]*>second<\/text>/);
   });
 
-  test("one line per link, centre to centre", () => {
+  test("every link is two lines, one per direction, drawn on the lane geometry with an arrowhead", () => {
     const lines = find(render(), "line");
-    expect(lines.length).toBe(1);
-    expect(lines[0]!.attrs["data-link"]).toBe("a--b");
-    expect([lines[0]!.attrs.x1, lines[0]!.attrs.y1, lines[0]!.attrs.x2, lines[0]!.attrs.y2]).toEqual(["180", "160", "420", "160"]);
+    expect(lines.length).toBe(2);
+    expect(lines.map((l) => l.attrs["data-link"])).toEqual(["a--b", "b--a"]);
+    const xy = (l: Tag) => [l.attrs.x1, l.attrs.y1, l.attrs.x2, l.attrs.y2];
+    expect(xy(lines[0]!)).toEqual(["224", "168", "376", "168"]);
+    expect(xy(lines[1]!)).toEqual(["376", "152", "224", "152"]);
+    for (const l of lines) {
+      expect(l.attrs["marker-end"]).toBe("url(#arrow)");
+      expect(l.attrs.stroke).toBe("currentColor");
+    }
+  });
+
+  test("one shared arrow marker is defined once inside defs", () => {
+    const svg = render();
+    const markers = find(svg, "marker");
+    expect(markers.length).toBe(1);
+    expect(markers[0]!.attrs.id).toBe("arrow");
+    expect(markers[0]!.index).toBeGreaterThan(svg.indexOf("<defs>"));
+    expect(markers[0]!.index).toBeLessThan(svg.indexOf("</defs>"));
+    expect(svg).toContain('fill="currentColor"/></marker>');
+  });
+
+  test("everything drawn lives in one g.scene", () => {
+    const svg = render();
+    expect(find(svg, "g", ["class", "scene"]).length).toBe(1);
+    const open = svg.indexOf('<g class="scene">');
+    const close = svg.lastIndexOf("</g>\n</svg>");
+    expect(open).toBeGreaterThan(svg.indexOf("</defs>"));
+    for (const cls of ["groups", "links", "nodes"]) {
+      const at = svg.indexOf(`class="${cls}"`);
+      expect(at).toBeGreaterThan(open);
+      expect(at).toBeLessThan(close);
+    }
   });
 
   test("nodes keep declaration order", () => {
@@ -156,22 +189,25 @@ describe("groups", () => {
     links: [["a", "b"]],
   });
   const gl: Layout = {
+    ...layout2,
     width: 900,
     height: 400,
-    nodes: { a: { x: 180, y: 160 }, b: { x: 420, y: 160 }, c: { x: 660, y: 160 } },
-    groups: { h: { x: 336, y: 28, width: 168, height: 192 }, g: { x: 576, y: 28, width: 168, height: 192 } },
+    nodes: { a: { x: 180, y: 160, i: 0, j: 0 }, b: { x: 420, y: 160, i: 2, j: 0 }, c: { x: 660, y: 160, i: 4, j: 0 } },
+    groups: {
+      h: { i0: 1, j0: -1, i1: 3, j1: 1, points: [[420, 80], [490.75, 120.95], [420, 161.9], [349.25, 120.95]] },
+      g: { i0: 3, j0: -1, i1: 5, j1: 1, points: [[660, 80], [730.75, 120.95], [660, 161.9], [589.25, 120.95]] },
+    },
   };
 
-  test("rect and label per group in declaration order", () => {
+  test("polygon and label per group in declaration order", () => {
     const svg = render(gs, gl);
-    const ids = find(svg, "g").filter((g) => g.attrs["data-group"]).map((g) => g.attrs["data-group"]);
-    expect(ids).toEqual(["h", "g"]);
-    const rects = find(svg, "rect").filter((r) => r.attrs.width !== "10");
-    expect(rects.length).toBe(2);
-    expect([rects[0]!.attrs.x, rects[0]!.attrs.y, rects[0]!.attrs.width, rects[0]!.attrs.height]).toEqual(["336", "28", "168", "192"]);
-    expect([rects[1]!.attrs.x, rects[1]!.attrs.y, rects[1]!.attrs.width, rects[1]!.attrs.height]).toEqual(["576", "28", "168", "192"]);
-    expect(svg).toMatch(/<text class="group-label"[^>]*>Home<\/text>/);
-    expect(svg).toMatch(/<text class="group-label"[^>]*>Gee<\/text>/);
+    expect(find(svg, "polygon").map((g) => g.attrs["data-group"])).toEqual(["h", "g"]);
+    const polys = find(svg, "polygon");
+    expect(polys[0]!.attrs.points).toBe("420,80 490.75,120.95 420,161.9 349.25,120.95");
+    expect(polys[1]!.attrs.points).toBe("660,80 730.75,120.95 660,161.9 589.25,120.95");
+    expect(find(svg, "rect").filter((r) => r.attrs.width !== "10").length).toBe(0);
+    expect(svg).toMatch(/<text class="group-label" x="420" y="102"[^>]*>Home<\/text>/);
+    expect(svg).toMatch(/<text class="group-label" x="660" y="102"[^>]*>Gee<\/text>/);
   });
 
   test("document order is groups, links, nodes", () => {
@@ -218,7 +254,7 @@ describe("escaping", () => {
       nodes: { a: { label: "A", icon: "laptop", group: "g" }, b: { label: "B", icon: "server" } },
       groups: { g: { label: "R&D <lab>" } },
     });
-    const l: Layout = { ...layout2, groups: { g: { x: 0, y: 0, width: 10, height: 10 } } };
+    const l: Layout = { ...layout2, groups: { g: { i0: 0, j0: 0, i1: 1, j1: 1, points: [[0, 0], [10, 5], [0, 10], [-10, 5]] } } };
     expect(render(s, l)).toMatch(/<text class="group-label"[^>]*>R&amp;D &lt;lab&gt;<\/text>/);
   });
 
@@ -238,18 +274,21 @@ describe("webrtc example", () => {
     expect(renderSvg(s, l, { icons: fakeIcon })).toMatchSnapshot();
   });
 
-  test("structure: 7 nodes, 6 links, 1 group, 3 symbols", async () => {
+  test("structure: 7 nodes, 12 lanes (6 links x 2), 1 group, 4 symbols", async () => {
     const { s, l } = await build();
     const svg = renderSvg(s, l, { icons: fakeIcon });
     expect(find(svg, "g").filter((g) => g.attrs["data-node"]).map((g) => g.attrs["data-node"])).toEqual([
       "client", "r1", "net", "stun", "sig", "r2", "sam",
     ]);
     expect(find(svg, "line").map((x) => x.attrs["data-link"])).toEqual([
-      "client--r1", "r1--net", "net--stun", "net--sig", "net--r2", "r2--sam",
+      "client--r1", "r1--client", "r1--net", "net--r1", "net--stun", "stun--net",
+      "net--sig", "sig--net", "net--r2", "r2--net", "r2--sam", "sam--r2",
     ]);
-    expect(find(svg, "g").filter((g) => g.attrs["data-group"]).map((g) => g.attrs["data-group"])).toEqual(["sams-home"]);
+    expect(svg.match(/data-link=/g)!.length).toBe(12);
+    expect(svg.match(/data-group=/g)!.length).toBe(1);
+    expect(find(svg, "polygon").map((g) => g.attrs["data-group"])).toEqual(["sams-home"]);
     expect(find(svg, "symbol").map((t) => t.attrs.id)).toEqual(["icon-cloud", "icon-laptop", "icon-router", "icon-server"]);
-    expect(tags(svg)[0]!.attrs.viewBox).toBe("0 0 1320 " + l.height);
+    expect(tags(svg)[0]!.attrs.viewBox).toBe("0 0 1057 657.5");
     expect(svg).toMatch(/Sam(&#39;|&apos;)s laptop/);
   });
 
