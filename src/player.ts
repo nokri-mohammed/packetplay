@@ -211,9 +211,23 @@ let nextClip = 0;
 
 // The highlight is the arrow itself: the static lane line of each hop of an active step turns the track
 // colour, becomes dotted and flows toward the destination. Each lane line is drawn in its own travel
-// direction, so one negative dash offset moves the dashes along it. The arrowhead keeps its colour:
-// the shared marker is filled with currentColor and one marker per track would be needed.
-const ATTRS = ["stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "stroke-dashoffset", "stroke-opacity"] as const;
+// direction, so one negative dash offset moves the dashes along it. The arrowhead follows the track colour
+// through a marker cloned from the shared one (one per colour, created on first use).
+const ATTRS = ["stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "stroke-dashoffset", "stroke-opacity", "marker-end"] as const;
+const markers = new Map<string, string>();
+function markerFor(color: string): string {
+  const known = markers.get(color);
+  if (known) return known;
+  const base = svg.querySelector("marker#arrow");
+  if (!base) return "url(#arrow)";
+  const id = "arrow-" + color.replace(/[^a-zA-Z0-9]/g, "");
+  const m = base.cloneNode(true) as Element;
+  m.setAttribute("id", id);
+  m.querySelector("path")?.setAttribute("fill", color);
+  base.parentNode?.appendChild(m);
+  markers.set(color, `url(#${id})`);
+  return `url(#${id})`;
+}
 const laneLines = new Map<string, { el: Element; orig: (string | null)[]; base: number }>();
 for (const el of svg.querySelectorAll("line[data-link]")) {
   const id = el.getAttribute("data-link");
@@ -249,6 +263,7 @@ function drawRoutes(t: number, reducedStep: StepTL | null): void {
     ln.el.setAttribute("stroke-linecap", "round");
     ln.el.setAttribute("stroke-dashoffset", h.offset.toFixed(1));
     ln.el.setAttribute("stroke-opacity", (ln.base + (1 - ln.base) * h.opacity).toFixed(3));
+    ln.el.setAttribute("marker-end", markerFor(h.color));
   }
 }
 
