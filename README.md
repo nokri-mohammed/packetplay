@@ -63,6 +63,19 @@ bun run src/cli.ts convert <file> --to json|yaml
 Built with Bun and TypeScript on top of [anime.js](https://animejs.com). See the
 [design plan](docs/plans/2026-11-14-svg-scenes.md).
 
+## Versioning
+
+A scene can say which schema version it is written for with an optional top-level `version` (an
+integer, 1 or higher). A missing `version` means 1. Additions that are optional (a new optional
+field) do not bump the version. A breaking change bumps it and adds a new schema folder
+(`schema/v2/`), while `schema/scene.schema.json` stays as version 1.
+
+A scene with a newer version than the tool understands fails to load with:
+
+```
+scene version 2 is not supported: this svg-scenes understands version 1 and older (update svg-scenes)
+```
+
 ## License
 
 [MIT](LICENSE).

@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "title": "How a UDP message travels",
   "nodes": {
     "laptop": {

@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
 title: How a UDP message travels
 
 nodes:

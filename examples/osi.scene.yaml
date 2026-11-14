@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
 title: "The OSI model: from a file to bits"
 
 nodes:

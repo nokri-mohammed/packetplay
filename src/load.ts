@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { parse as parseYaml, YAMLParseError } from "yaml";
 import type { Scene } from "./types.generated.ts";
+import { SCHEMA_VERSION } from "./version.ts";
+
+class SceneVersionError extends Error {}
 
 export type SceneFormat = "yaml" | "json";
 
@@ -10,6 +13,12 @@ export function parseScene(text: string, format: SceneFormat): Scene {
   const value: unknown = format === "json" ? JSON.parse(text) : parseYaml(text);
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error("file is empty or not a scene");
+  }
+  const version = (value as { version?: unknown }).version;
+  if (typeof version === "number" && Number.isInteger(version) && version > SCHEMA_VERSION) {
+    throw new SceneVersionError(
+      `scene version ${version} is not supported: this svg-scenes understands version ${SCHEMA_VERSION} and older (update svg-scenes)`,
+    );
   }
   return value as Scene;
 }
@@ -37,6 +46,9 @@ export async function loadScene(path: string): Promise<Scene> {
   try {
     return parseScene(text, format);
   } catch (e) {
+    if (e instanceof SceneVersionError) {
+      throw new Error(`${name}: ${e.message}`);
+    }
     if ((e as Error).message === "file is empty or not a scene") {
       throw new Error(`${name}: file is empty or not a scene`);
     }

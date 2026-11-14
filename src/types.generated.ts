@@ -21,6 +21,10 @@ export interface Scene {
    */
   $schema?: string;
   /**
+   * Schema version this scene is written for. Missing means 1.
+   */
+  version?: number;
+  /**
    * Title of the scene, shown above the diagram.
    */
   title: string;

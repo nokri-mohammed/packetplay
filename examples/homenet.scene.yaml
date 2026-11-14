@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=../schema/scene.schema.json
+version: 1
 title: "A home network: two switches, one router"
 
 nodes:

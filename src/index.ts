@@ -5,3 +5,4 @@ export * from "./validate.ts";
 export * from "./icons.ts";
 export * from "./layout.ts";
 export * from "./render.ts";
+export * from "./version.ts";

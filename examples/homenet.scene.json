@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "title": "A home network: two switches, one router",
   "nodes": {
     "internet": {
