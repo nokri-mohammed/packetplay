@@ -124,7 +124,8 @@ function semanticIssues(scene: Obj): Issue[] {
     Array.isArray(scene.links) &&
     scene.links.every((l: unknown) => Array.isArray(l) && l.length === 2 && l.every((id) => has(nodes, id)));
 
-  const checkStep = (step: Obj, ch: number, st: number, base: string) => {
+  /** Checks ends, track, via and the route. Returns the routed node path, or null when it cannot be routed. */
+  const checkRoute = (step: Obj, ch: number, st: number, base: string): string[] | null => {
     const label = `chapter ${ch + 1}, step ${st + 1}`;
     let ok = true;
     const ends: unknown[] = [step.from, step.to];
@@ -144,17 +145,48 @@ function semanticIssues(scene: Obj): Issue[] {
         issues.push({ path: `${base}.via[${i}]`, message: `${label}: via node "${v}" does not exist` });
       }
     });
-    if (!ok) return;
+    if (!ok) return null;
     if (step.from === step.to) {
       issues.push({ path: base, message: `${label}: from and to are the same node "${step.from}"` });
-      return;
+      return null;
     }
-    if (!linksOk) return;
+    if (!linksOk) return null;
     try {
-      routeStep(scene as unknown as Scene, step as unknown as Step);
+      return routeStep(scene as unknown as Scene, step as unknown as Step);
     } catch (e) {
       issues.push({ path: base, message: `${label}: ${(e as Error).message}` });
+      return null;
     }
+  };
+
+  // Hidden nodes: used before they are revealed, revealed twice, or revealed without being hidden.
+  const revealed = new Set<string>();
+  const checkStep = (step: Obj, ch: number, st: number, base: string) => {
+    const label = `chapter ${ch + 1}, step ${st + 1}`;
+    const path = checkRoute(step, ch, st, base);
+    const via: unknown[] = Array.isArray(step.via) ? step.via : [];
+    const used = path ?? [step.from, ...via, step.to];
+    const flagged = new Set<unknown>();
+    for (const id of used) {
+      if (flagged.has(id) || !has(nodes, id) || !isObj(nodes[id as string]) || nodes[id as string].hidden !== true) continue;
+      if (!revealed.has(id as string)) {
+        flagged.add(id);
+        issues.push({ path: base, message: `${label}: node "${id}" is used before it is revealed` });
+      }
+    }
+    const reveal: unknown[] = Array.isArray(step.reveal) ? step.reveal : [];
+    reveal.forEach((id, i) => {
+      const at = `${base}.reveal[${i}]`;
+      if (!has(nodes, id)) {
+        issues.push({ path: at, message: `${label}: reveal node "${id}" does not exist` });
+      } else if (!isObj(nodes[id as string]) || nodes[id as string].hidden !== true) {
+        issues.push({ path: at, message: `${label}: reveal node "${id}" is not hidden` });
+      } else if (revealed.has(id as string)) {
+        issues.push({ path: at, message: `${label}: node "${id}" is already revealed` });
+      } else {
+        revealed.add(id as string);
+      }
+    });
   };
 
   const chapters: unknown[] = Array.isArray(scene.chapters) ? scene.chapters : [];

@@ -175,3 +175,86 @@ describe("validateScene: semantic errors", () => {
     expect(issue?.path).toBe("chapters[1].steps[0].from");
   });
 });
+
+describe("validateScene: hidden and reveal", () => {
+  /** a - b - c with c hidden; step 1 a to b reveals nothing, step 2 a to b reveals c. */
+  const hiddenScene = (): any => {
+    const s = base();
+    s.nodes.c.hidden = true;
+    s.chapters = [{ title: "one", steps: [{ from: "a", to: "b" }, { from: "b", to: "a", reveal: ["c"] }, { from: "a", to: "c" }] }];
+    return s;
+  };
+
+  test("a valid scene that hides a node and reveals it before use has no issues", () => {
+    expect(validateScene(hiddenScene())).toEqual([]);
+  });
+
+  test("a hidden node that is never revealed and never used is allowed", () => {
+    const s = hiddenScene();
+    s.chapters = [{ title: "one", steps: [{ from: "a", to: "b" }] }];
+    expect(validateScene(s)).toEqual([]);
+  });
+
+  test("reveal of a node that does not exist", () => {
+    const s = hiddenScene();
+    s.chapters[0].steps[1].reveal = ["ghost"];
+    expect(validateScene(s)).toContainEqual({
+      path: "chapters[0].steps[1].reveal[0]",
+      message: 'chapter 1, step 2: reveal node "ghost" does not exist',
+    });
+  });
+
+  test("reveal of a node that is not hidden", () => {
+    const s = hiddenScene();
+    s.chapters[0].steps[1].reveal = ["c", "d"];
+    expect(validateScene(s)).toEqual([
+      { path: "chapters[0].steps[1].reveal[1]", message: 'chapter 1, step 2: reveal node "d" is not hidden' },
+    ]);
+  });
+
+  test("a node revealed twice", () => {
+    const s = hiddenScene();
+    s.chapters[0].steps[2] = { from: "a", to: "b", reveal: ["c"] };
+    expect(validateScene(s)).toEqual([
+      { path: "chapters[0].steps[2].reveal[0]", message: 'chapter 1, step 3: node "c" is already revealed' },
+    ]);
+  });
+
+  test("a hidden node used as the destination before it is revealed", () => {
+    const s = hiddenScene();
+    s.chapters[0].steps = [{ from: "a", to: "c" }, { from: "a", to: "b", reveal: ["c"] }];
+    expect(validateScene(s)).toEqual([
+      { path: "chapters[0].steps[0]", message: 'chapter 1, step 1: node "c" is used before it is revealed' },
+    ]);
+  });
+
+  test("a hidden node on the routed path is used, even when it is not an endpoint", () => {
+    const s = hiddenScene();
+    s.nodes.b.hidden = true;
+    s.nodes.c.hidden = false;
+    s.chapters[0].steps = [{ from: "a", to: "c" }, { from: "a", to: "d", reveal: ["b"] }];
+    const issues = validateScene(s);
+    expect(issues).toContainEqual({
+      path: "chapters[0].steps[0]",
+      message: 'chapter 1, step 1: node "b" is used before it is revealed',
+    });
+  });
+
+  test("the revealing step itself may not use the node it reveals", () => {
+    const s = hiddenScene();
+    s.chapters[0].steps = [{ from: "a", to: "c", reveal: ["c"] }];
+    expect(validateScene(s)).toEqual([
+      { path: "chapters[0].steps[0]", message: 'chapter 1, step 1: node "c" is used before it is revealed' },
+    ]);
+  });
+
+  test("a hidden node used as a via before it is revealed, inside a parallel block", () => {
+    const s = hiddenScene();
+    s.chapters[0].steps = [{ parallel: [{ from: "a", to: "c", via: ["b"] }, { from: "a", to: "b" }] }];
+    s.nodes.b.hidden = true;
+    s.nodes.c.hidden = false;
+    const msgs = messages(s);
+    expect(msgs).toContain('chapter 1, step 1: node "b" is used before it is revealed');
+  });
+});
+

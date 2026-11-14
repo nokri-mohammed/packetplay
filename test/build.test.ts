@@ -151,8 +151,34 @@ describe("website example", () => {
     // Step 1 (you to laptop) is 1 hop: 2050 ms. The other 10 steps are 3 hops * 2050 = 6150 ms each.
     // 2050 + 10 * 6150 + 10 gaps * 500 = 68550.
     expect(timeline.totalMs).toBe(68550);
+    expect(timeline.hidden).toEqual(["web"]);
     const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
     expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
+  });
+});
+
+describe("website example: hidden server", () => {
+  test("shop.example.com is revealed when the last hop of the DNS answer arrives", async () => {
+    const { compileTimeline } = await import("../src/timeline.ts");
+    const { layoutScene } = await import("../src/layout.ts");
+    const scene = await loadScene(root + "examples/website.scene.yaml");
+    const tl = compileTimeline(scene, layoutScene(scene));
+    // Step 1: 1 hop, 2050 ms, gap 500, so the DNS query starts at 2550.
+    // The query is 3 hops: 2550 + 6150 = 8700, gap 500, so the DNS answer starts at 9200.
+    // Its hops start at 9200, 11250 and 13300. The last one arrives 1300 ms later: 14600.
+    const answer = tl.steps.find((s) => s.label === "DNS answer")!;
+    expect(answer.startMs).toBe(9200);
+    expect(answer.hops.map((h) => h.startMs)).toEqual([9200, 11250, 13300]);
+    expect(tl.reveals).toEqual([{ node: "web", atMs: 14600, stepId: answer.id }]);
+    expect(tl.reveals[0]!.atMs).toBe(answer.hops[2]!.endMs);
+  });
+
+  test("the static SVG still shows the node and has no style element", async () => {
+    const html = await buildHtml(await loadScene(root + "examples/website.scene.yaml"));
+    expect(html).toContain('data-node="web"');
+    const svg = html.match(/<svg[\s\S]*?<\/svg>/)?.[0] ?? "";
+    expect(svg).not.toContain("<style");
+    expect(svg).not.toContain('opacity="0"');
   });
 });
 

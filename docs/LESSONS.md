@@ -43,3 +43,5 @@
   (T-20261114-1)
 - A step needs `from != to`, so a same-node action (typing, crossing a cable) cannot be its own step: model it as a hop from a neighbour node or describe it in the next step's desc. (T-20261114-19 and 20)
 - A plain YAML scalar value (for example `desc:`) must not contain `: `, or the parser fails; use quotes or reword. Groups on a chain of nodes come out as adjacent bands sharing an edge. (T-20261114-21)
+- A ticket line "other examples build unchanged" should mean scene, layout and timing, not byte size: adding timeline fields changes page JSON for every example. (T-20261114-22)
+- The "used before revealed" check needs the routed path, so route validation returns its path. A back lane is already drawn in its own travel direction, so one dash offset serves both lanes of a `both` step. (T-20261114-22)

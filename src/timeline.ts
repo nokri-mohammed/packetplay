@@ -73,9 +73,19 @@ export interface TrackTL {
   label: string;
   color: string;
 }
+export interface RevealTL {
+  node: string;
+  /** Arrival time of the revealing step's last hop. The node fades in from here. */
+  atMs: number;
+  /** Id of the revealing step. */
+  stepId: string;
+}
 export interface Timeline {
   title: string;
   totalMs: number;
+  /** Ids of the nodes that start hidden. Those that no step reveals are never shown. */
+  hidden: string[];
+  reveals: RevealTL[];
   tracks: TrackTL[];
   chapters: ChapterTL[];
   steps: StepTL[];
@@ -154,7 +164,13 @@ export function compileTimeline(scene: Scene, layout: Layout): Timeline {
   }));
   const chapters: ChapterTL[] = [];
   const all: StepTL[] = [];
+  const reveals: RevealTL[] = [];
   let cursor = 0;
+  const noteReveals = (step: Step, st: StepTL): void => {
+    const last = st.hops[st.hops.length - 1];
+    if (!last) return;
+    for (const node of step.reveal ?? []) reveals.push({ node, atMs: last.endMs, stepId: st.id });
+  };
 
   scene.chapters.forEach((ch, ci) => {
     const steps: StepTL[] = [];
@@ -166,11 +182,13 @@ export function compileTimeline(scene: Scene, layout: Layout): Timeline {
         s.parallel.forEach((child, k) => {
           const st = compileStep(scene, layout, child, `${base}p${k + 1}`, ci, si, start);
           steps.push(st);
+          noteReveals(child, st);
           end = Math.max(end, st.endMs);
         });
       } else {
         const st = compileStep(scene, layout, s, base, ci, si, start);
         steps.push(st);
+        noteReveals(s, st);
         end = st.endMs;
       }
       cursor = end + STEP_GAP_MS;
@@ -188,5 +206,8 @@ export function compileTimeline(scene: Scene, layout: Layout): Timeline {
   });
 
   const totalMs = all.length ? Math.max(...all.map((s) => s.endMs)) : 0;
-  return { title: scene.title, totalMs, tracks, chapters, steps: all };
+  const hidden = Object.entries(scene.nodes)
+    .filter(([, n]) => n.hidden === true)
+    .map(([id]) => id);
+  return { title: scene.title, totalMs, hidden, reveals, tracks, chapters, steps: all };
 }

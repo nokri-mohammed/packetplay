@@ -26,7 +26,8 @@
     "web": {
       "label": "shop.example.com",
       "icon": "server",
-      "sub": "198.51.100.80"
+      "sub": "198.51.100.80",
+      "hidden": true
     }
   },
   "links": [
@@ -119,7 +120,10 @@
           "to": "laptop",
           "track": "dns",
           "label": "DNS answer",
-          "desc": "The resolver replies with the address. Now the browser knows where to connect.",
+          "desc": "The resolver replies with the address. Now the browser knows where to connect. The server now appears.",
+          "reveal": [
+            "web"
+          ],
           "data": {
             "proto": "UDP",
             "src": "198.51.100.53:53",

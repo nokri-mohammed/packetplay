@@ -113,6 +113,10 @@ export interface Node {
    */
   group?: string;
   /**
+   * Not shown until a step reveals it.
+   */
+  hidden?: boolean;
+  /**
    * Optional manual position [i, j] in isometric tile coordinates. Fractions are allowed.
    *
    * @minItems 2
@@ -211,6 +215,10 @@ export interface Step {
    * Pause the player after this step.
    */
   pause?: boolean;
+  /**
+   * Nodes that appear when this step's message arrives.
+   */
+  reveal?: string[];
 }
 /**
  * What changes at a node when the message arrives.

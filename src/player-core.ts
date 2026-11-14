@@ -105,6 +105,35 @@ export function balloonRect(
   return { x: left, y: y + BALLOON_GAP, tetherY: y + BALLOON_GAP };
 }
 
+/** Length of the fade in and fade out of a step's dotted route. */
+export const ROUTE_FADE_MS = 300;
+/** The dashes of the route move one pixel per this many milliseconds. */
+export const ROUTE_DASH_MS = 25;
+
+/**
+ * The dotted route of a step at time t: every hop of the step, an opacity that ramps 0 to 1 over the
+ * first 300 ms and 1 to 0 over the last 300 ms, and the dash offset (a pure function of t).
+ * Null when t is outside [startMs, endMs].
+ */
+export function routeHighlight(
+  t: number,
+  step: StepTL,
+): { hops: HopTL[]; opacity: number; offset: number } | null {
+  if (t < step.startMs || t > step.endMs) return null;
+  const fadeIn = (t - step.startMs) / ROUTE_FADE_MS;
+  const fadeOut = (step.endMs - t) / ROUTE_FADE_MS;
+  const opacity = Math.min(1, Math.max(0, Math.min(fadeIn, fadeOut)));
+  return { hops: step.hops, opacity, offset: -t / ROUTE_DASH_MS };
+}
+
+/** Fade-in time of a node that a step reveals. */
+export const REVEAL_FADE_MS = 600;
+
+/** Opacity of a revealed node at time t: 0 before `atMs`, ramping to 1 over 600 ms. */
+export function revealOpacity(t: number, atMs: number): number {
+  return Math.min(1, Math.max(0, (t - atMs) / REVEAL_FADE_MS));
+}
+
 /** Everything that is visible at time t. */
 export function frameAt(tl: Timeline, tMs: number): Frame {
   const t = tMs;

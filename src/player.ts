@@ -12,6 +12,8 @@ import {
   keyAction,
   nextTime,
   prevTime,
+  revealOpacity,
+  routeHighlight,
   stepSpeed,
   timeFromFraction,
   timelineMarks,
@@ -108,6 +110,10 @@ const scene = svg.querySelector("g.scene") as SVGGElement;
 const overlay = document.createElementNS(SVGNS, "g");
 overlay.setAttribute("pointer-events", "none");
 scene.appendChild(overlay);
+// The dotted routes sit above the static links and below the nodes and packets.
+const routeLayer = document.createElementNS(SVGNS, "g");
+routeLayer.setAttribute("pointer-events", "none");
+scene.insertBefore(routeLayer, svg.querySelector("g.nodes"));
 
 // Node centres come from the rendered SVG (the timeline only knows lane coordinates).
 const nodePos = new Map<string, { x: number; y: number }>();
@@ -207,6 +213,50 @@ function packetMarkup(
   return out;
 }
 let nextClip = 0;
+
+const ROUTE_OPACITY = 0.85;
+
+// Dotted route of every active packet-mode or flow step, on the same lanes the packets travel. Each lane
+// is drawn in its own travel direction, so one negative dash offset moves the dashes along it.
+function drawRoutes(t: number, reducedStep: StepTL | null): void {
+  let out = "";
+  const steps = reducedStep ? [reducedStep] : tl.steps;
+  for (const s of steps) {
+    const r = reducedStep ? { hops: s.hops, opacity: 1, offset: 0 } : routeHighlight(t, s);
+    if (!r || r.opacity <= 0) continue;
+    const attrs = `fill="none" stroke="${s.color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9" stroke-dashoffset="${r.offset.toFixed(1)}" stroke-opacity="${(ROUTE_OPACITY * r.opacity).toFixed(3)}"`;
+    for (const h of r.hops) {
+      out += `<line x1="${h.x1.toFixed(1)}" y1="${h.y1.toFixed(1)}" x2="${h.x2.toFixed(1)}" y2="${h.y2.toFixed(1)}" ${attrs}/>`;
+      if (s.both) out += `<line x1="${h.back.x1.toFixed(1)}" y1="${h.back.y1.toFixed(1)}" x2="${h.back.x2.toFixed(1)}" y2="${h.back.y2.toFixed(1)}" ${attrs}/>`;
+    }
+  }
+  routeLayer.innerHTML = out;
+}
+
+// Hidden nodes: the node group and every lane touching it share one opacity, from the reveal time.
+const hiddenIds = new Set(tl.hidden ?? []);
+const revealAt = new Map<string, { atMs: number; stepId: string }>(
+  (tl.reveals ?? []).map((r) => [r.node, { atMs: r.atMs, stepId: r.stepId }]),
+);
+const hiddenEls = new Map<string, Element[]>();
+for (const id of hiddenIds) {
+  const els: Element[] = [];
+  for (const el of svg.querySelectorAll("[data-node],[data-link]")) {
+    if (el.getAttribute("data-node") === id) els.push(el);
+    const link = el.getAttribute("data-link");
+    if (link !== null && link.split("--").includes(id)) els.push(el);
+  }
+  hiddenEls.set(id, els);
+}
+// Opacity of a lane or node that touches several hidden nodes is the smallest of them.
+function drawHidden(opacityOf: (id: string) => number): void {
+  const per = new Map<Element, number>();
+  for (const [id, els] of hiddenEls) {
+    const o = opacityOf(id);
+    for (const el of els) per.set(el, Math.min(per.get(el) ?? 1, o));
+  }
+  for (const [el, o] of per) el.setAttribute("opacity", o.toFixed(3));
+}
 
 function drawOverlay(f: Frame): void {
   let out = "";
@@ -341,6 +391,22 @@ let ticking = false;
 function render(c: number): void {
   const f = reduced ? reducedFrame(c) : frameAt(tl, c);
   drawOverlay(f);
+  if (reduced) {
+    const i = Math.max(0, Math.min(nSteps - 1, Math.floor(c / DWELL_MS)));
+    drawRoutes(0, tl.steps[i] ?? null);
+    // Shown from the step that reveals it, no fade.
+    drawHidden((id) => {
+      const r = revealAt.get(id);
+      const rs = r ? stepById.get(r.stepId) : undefined;
+      return rs && tl.steps.indexOf(rs) <= i ? 1 : 0;
+    });
+  } else {
+    drawRoutes(c, null);
+    drawHidden((id) => {
+      const r = revealAt.get(id);
+      return r ? revealOpacity(c, r.atMs) : 0;
+    });
+  }
   drawCaption(f.caption);
   const real = realFromClock(c);
   const pct = tl.totalMs > 0 ? (real / tl.totalMs) * 100 : 0;

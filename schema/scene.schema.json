@@ -131,6 +131,10 @@
           "type": "string",
           "description": "Id of the group this node belongs to."
         },
+        "hidden": {
+          "type": "boolean",
+          "description": "Not shown until a step reveals it."
+        },
         "at": {
           "type": "array",
           "description": "Optional manual position [i, j] in isometric tile coordinates. Fractions are allowed.",
@@ -322,6 +326,13 @@
         "pause": {
           "type": "boolean",
           "description": "Pause the player after this step."
+        },
+        "reveal": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Nodes that appear when this step's message arrives."
         }
       }
     },
