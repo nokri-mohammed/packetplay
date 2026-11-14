@@ -127,3 +127,31 @@ describe("udp example", () => {
     ]);
   });
 });
+
+describe("website example", () => {
+  const webYaml = root + "examples/website.scene.yaml";
+  const webJson = root + "examples/website.scene.json";
+
+  test("YAML and JSON give the same model and it validates", async () => {
+    const y = (await loadScene(webYaml)) as unknown as Record<string, unknown>;
+    const j = (await loadScene(webJson)) as unknown as Record<string, unknown>;
+    delete y.$schema;
+    delete j.$schema;
+    expect(y).toEqual(j);
+    expect(validateScene(y)).toEqual([]);
+  });
+
+  test("builds a page with 4 chapters, 10 steps and the hand-calculated totalMs", async () => {
+    const html = await buildHtml(await loadScene(webYaml));
+    expect(html).toContain("<title>How a browser loads a website</title>");
+    const m = html.match(/<script type="application\/json" id="timeline-data">([\s\S]*?)<\/script>/);
+    const timeline = JSON.parse(m?.[1] ?? "{}");
+    expect(timeline.chapters.length).toBe(4);
+    expect(timeline.steps.length).toBe(10);
+    // Every step is 3 hops * (1600 + 900) = 7500 ms, with a 600 ms gap between steps.
+    // 10 * 7500 + 9 * 600 = 80400.
+    expect(timeline.totalMs).toBe(80400);
+    const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
+    expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
+  });
+});

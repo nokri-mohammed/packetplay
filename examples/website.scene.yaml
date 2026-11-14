@@ -1,0 +1,148 @@
+# yaml-language-server: $schema=../schema/scene.schema.json
+title: How a browser loads a website
+
+nodes:
+  laptop: { label: Your laptop,     icon: laptop }
+  router: { label: Your router,     icon: router, sub: NAT }
+  net:    { label: Internet,        icon: cloud }
+  dns:    { label: DNS resolver,    icon: server, sub: 198.51.100.53 }
+  web:    { label: shop.example.com, icon: server, sub: 198.51.100.80 }
+
+links:
+  - [laptop, router]
+  - [router, net]
+  - [net, dns]
+  - [net, web]
+
+tracks:
+  dns:  { label: DNS lookup (UDP), color: purple }
+  tcp:  { label: TCP handshake,    color: orange }
+  tls:  { label: TLS handshake,    color: teal }
+  http: { label: HTTPS request,    color: green }
+
+chapters:
+  - title: 1. Find the server's address (DNS)
+    steps:
+      - from: laptop
+        to: dns
+        track: dns
+        label: DNS query
+        desc: The browser asks the DNS resolver which address belongs to the name. NAT swaps your private address for the router's public one.
+        data:
+          proto: UDP
+          src: "192.0.2.20:49152"
+          dst: "198.51.100.53:53"
+          question: "A shop.example.com?"
+        at:
+          router:
+            set: { src: "203.0.113.7:61000" }
+            desc: NAT replaces your private source address and port
+      - from: dns
+        to: laptop
+        track: dns
+        label: DNS answer
+        desc: The resolver replies with the address. Now the browser knows where to connect.
+        data:
+          proto: UDP
+          src: "198.51.100.53:53"
+          dst: "203.0.113.7:61000"
+          answer: "198.51.100.80"
+        at:
+          router:
+            set: { dst: "192.0.2.20:49152" }
+            desc: NAT maps the reply back to your laptop
+
+  - title: 2. Open a connection (TCP handshake)
+    steps:
+      - from: laptop
+        to: web
+        track: tcp
+        label: SYN
+        desc: The laptop asks the server to open a connection and proposes a starting number.
+        data:
+          flags: SYN
+          src: "192.0.2.20:50000"
+          dst: "198.51.100.80:443"
+          seq: 1000
+        at:
+          router:
+            set: { src: "203.0.113.7:61001" }
+            desc: NAT replaces your private source address and port
+      - from: web
+        to: laptop
+        track: tcp
+        label: SYN-ACK
+        desc: The server agrees and sends its own starting number.
+        data:
+          flags: SYN-ACK
+          src: "198.51.100.80:443"
+          dst: "203.0.113.7:61001"
+          seq: "seq 5000, ack 1001"
+        at:
+          router:
+            set: { dst: "192.0.2.20:50000" }
+            desc: NAT maps the reply back to your laptop
+      - from: laptop
+        to: web
+        track: tcp
+        label: ACK
+        desc: The connection is open. Both sides agree on the numbers.
+        data:
+          flags: ACK
+          src: "192.0.2.20:50000"
+          dst: "198.51.100.80:443"
+          seq: "seq 1001, ack 5001"
+        at:
+          router:
+            set: { src: "203.0.113.7:61001" }
+            desc: NAT replaces your private source address and port
+
+  - title: 3. Agree on encryption (TLS handshake)
+    steps:
+      - from: laptop
+        to: web
+        track: tls
+        label: ClientHello
+        desc: The browser lists the encryption methods it supports and names the site it wants.
+        data:
+          proto: TLS 1.3
+          offers: "cipher suites"
+          sni: "shop.example.com"
+      - from: web
+        to: laptop
+        track: tls
+        label: ServerHello + certificate
+        desc: The server picks one method and proves who it is with a certificate.
+        data:
+          proto: TLS 1.3
+          chose: "one cipher suite"
+          certificate: "shop.example.com"
+      - from: laptop
+        to: web
+        track: tls
+        label: Key exchange + Finished
+        desc: Both sides now share a secret key. After this, everything is encrypted.
+        data:
+          proto: TLS 1.3
+          result: "shared secret"
+
+  - title: 4. Ask for the page (HTTPS)
+    steps:
+      - from: laptop
+        to: web
+        track: http
+        label: HTTP request
+        desc: The browser asks for the home page, inside the encrypted connection.
+        data:
+          request: "GET /"
+          host: "shop.example.com"
+          encrypted: yes
+      - from: web
+        to: laptop
+        track: http
+        label: HTTP response
+        desc: The server sends the page. The browser now draws it on screen.
+        data:
+          status: "200 OK"
+          body: "the web page (HTML)"
+          encrypted: yes

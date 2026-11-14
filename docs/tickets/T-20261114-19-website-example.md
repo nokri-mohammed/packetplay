@@ -106,9 +106,38 @@ CEO asked for this on 2026-11-14 and said "go until everything is done".
 
 ## Report
 
-<The agent fills this in when finished. Start with `Status: done` (or `blocked`), then:>
+Status: done
 
-- **Did:**
+- **Did:** added `examples/website.scene.yaml` and `examples/website.scene.json` (JSON from the CLI
+  `convert`), extended `build:examples` in `package.json` to also write `dist/website.html`, added the
+  README line (and "Three examples ship"), added 2 tests in `test/build.test.ts`. No engine, schema,
+  layout, timing or player changes. Nothing committed or pushed.
 - **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+  - `bun test`: 177 pass, 0 fail (15 files).
+  - `bun run typecheck`: clean.
+  - `bun run build:examples`: webrtc.html 78727 bytes, udp.html 65465 bytes, website.html 85880 bytes.
+  - `./scripts/check-public.sh --all`: exit 0.
+  - `http` strings in `dist/website.html`: only `http://www.w3.org/2000/svg`.
+  - No em dashes in the changed files.
+  - Hand calculation of totalMs: every step has 3 hops (laptop, router, net, then dns or web), so a
+    step lasts 3 * (1600 + 900) = 7500 ms. Ten steps give 75000 ms, plus 9 gaps of 600 ms (5400 ms)
+    between steps, no trailing gap: 80400 ms. Chapter windows: 0-15600, 16200-39900, 40500-64200,
+    64800-80400. The test asserts 80400, 4 chapters and 10 steps.
+- **Left / needs a decision:** nothing. The CEO tests by hand.
+- **Lessons:** the `yaml` library reads `yes` as the string "yes" (YAML 1.2), so `encrypted: yes`
+  survives into the JSON as a string and validates as data.
+
+Browser checklist for the CEO (open `dist/website.html`):
+
+1. Four chapters appear in order: DNS, TCP handshake, TLS handshake, HTTPS.
+2. Chapter 1: the query goes laptop to DNS resolver, the answer comes back.
+3. Chapter 2: SYN goes out, SYN-ACK comes back, ACK goes out (back and forth).
+4. Chapter 3: ClientHello out, ServerHello + certificate back, Key exchange + Finished out.
+5. Chapter 4: request out, response back.
+6. At the router, the src row changes to 203.0.113.x on the way out and the dst row changes back to
+   192.0.2.20 on the way in (DNS and TCP steps only, not TLS or HTTP).
+7. Each packet shows at most 4 rows, no "+N more".
+8. The five nodes (laptop, router, Internet, DNS resolver, shop.example.com) are laid out clearly and
+   nothing covers anything, including the info box above the lane.
+9. Track colours differ: purple, orange, teal, green.
+10. The page ends after the response, at about 80 seconds in total.
