@@ -91,6 +91,46 @@ diff.
   and the page works with reduced motion on.
 - Before every commit: `./scripts/check-public.sh` exits 0.
 
+## Design changes requested by the CEO (2026-11-14, via the homelab-team session)
+
+**Status: proposed, waiting for the CEO's confirmation. Nothing below is built.** M1 to M4 are
+already built and pushed, so both changes are rework of shipped code, not new work on a clean slate.
+
+### Change 1: isometric 3D grid background
+
+Reference: `homelab-team-all/projects/learning-notes/notes/networking/file-journey.html`.
+
+- The grid is a repeating SVG tile used as a CSS background of the page: tile 141.5 x 81.9 (half
+  tile 70.75 x 40.95), the same 30 degree isometric numbers Isoflow uses. The tile is a diamond
+  outline with a low opacity stroke.
+- Scroll zooms (limits 0.2 to 1.6), drag pans. The grid moves and scales with the scene: background
+  size is `tile * zoom`, background position follows pan, and the scene is drawn in a group with
+  `translate(pan) scale(zoom)`. Zoom is centred on the pointer. Touch: pinch to zoom and one finger
+  to pan. Plus and minus buttons and a percent label, and a "fit" action on load.
+- Node `at: [x, y]` become isometric grid tile coordinates. Screen position of tile `(i, j)` is
+  `x = (i - j) * 70.75`, `y = (i + j) * 40.95`. Auto layout snaps to whole tiles.
+- Optional per-scene `grid: iso | none` (default `iso`) in the schema and types.
+- Affects: M1 schema (`grid`, and the meaning and doc of `at`), M2 layout (`layoutScene` output and
+  constants `CELL_W`, `CELL_H`, group rectangles), M2 render (background and viewBox), M3 player
+  (zoom and pan, which are new). The M2 layout and render tests and the render snapshot change.
+
+### Change 2: every link is two arrows, one per direction
+
+- A link `[a, b]` is drawn as two arrows side by side with a small offset: one `a -> b`, one
+  `b -> a`. Never a single line.
+- A message from A to B travels on the A-to-B arrow, the reply on the B-to-A arrow. `mode: flow`
+  with `both: true` animates both lanes at once.
+- Affects: M2 render (two `data-link` elements per link, for example `a--b` and `b--a`, with
+  arrowheads) and M3 compile and player (each hop records its lane, packet and flow positions use
+  the lane geometry). Router, validator and schema stay as they are.
+
+### Open points for the CEO
+
+- Lane offset size and arrowhead style (proposal: offset about 8 px at zoom 1, small triangular
+  heads, lane colour follows the track while moving and is neutral at rest).
+- Whether `grid: none` is wanted at all (it is optional, costs little).
+- Order of work: test the current page first, then do both changes in one rework ticket.
+
 ## Out of scope for now
 
 Other icon packs with vendor terms (AWS, Azure, GCP, Kubernetes), npm publishing, and a hosted
