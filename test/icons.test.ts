@@ -8,10 +8,10 @@ const files = readdirSync(root + "icons/isoflow")
   .map((f) => f.slice(0, -4))
   .sort();
 
-const ids = (s: string) => [...s.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]);
+const ids = (s: string) => [...s.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]!);
 const refs = (s: string) => [
-  ...[...s.matchAll(/url\(#([^)]*)\)/g)].map((m) => m[1]),
-  ...[...s.matchAll(/href="#([^"]*)"/g)].map((m) => m[1]),
+  ...[...s.matchAll(/url\(#([^)]*)\)/g)].map((m) => m[1]!),
+  ...[...s.matchAll(/href="#([^"]*)"/g)].map((m) => m[1]!),
 ];
 const errorOf = (fn: () => unknown): Error => {
   try {
@@ -25,7 +25,7 @@ const errorOf = (fn: () => unknown): Error => {
 describe("iconNames", () => {
   test("is the sorted list of icons/isoflow/*.svg stems", () => {
     expect(iconNames()).toEqual(files);
-    expect(iconNames().length).toBe(39);
+    expect(iconNames().length).toBe(37);
     expect(iconNames()).toContain("laptop");
     expect(iconNames()).toContain("truck-2");
   });

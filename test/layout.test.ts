@@ -49,7 +49,7 @@ describe("explicit at", () => {
   test("fractions round up for the canvas", () => {
     const l = layoutScene(mk({ a: { at: [0.5, 1.5] } }));
     expect(l.width).toBe(120 + 2 * 240);
-    expect(l.height).toBe(120 + 2 * 200);
+    expect(l.height).toBe(120 + 3 * 200);
   });
 
   test("an auto-placed node does not move a pinned node", () => {
@@ -76,18 +76,18 @@ describe("automatic placement", () => {
 
   test("links are undirected: the column is breadth-first depth from the first declared node", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {} }, [["c", "b"], ["b", "a"]]));
-    expect(l.nodes.a.x).toBe(cx(0));
-    expect(l.nodes.b.x).toBe(cx(1));
-    expect(l.nodes.c.x).toBe(cx(2));
+    expect(l.nodes.a!.x).toBe(cx(0));
+    expect(l.nodes.b!.x).toBe(cx(1));
+    expect(l.nodes.c!.x).toBe(cx(2));
   });
 
   test("siblings share a column and get different integer rows, smallest row is 0", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {}, d: {} }, [["a", "b"], ["a", "c"], ["a", "d"]]));
-    for (const id of ["b", "c", "d"]) expect(l.nodes[id].x).toBe(cx(1));
-    const rows = ["a", "b", "c", "d"].map((id) => rowOf(l.nodes[id].y));
+    for (const id of ["b", "c", "d"]) expect(l.nodes[id]!.x).toBe(cx(1));
+    const rows = ["a", "b", "c", "d"].map((id) => rowOf(l.nodes[id]!.y));
     for (const r of rows) expect(Number.isInteger(r)).toBe(true);
     expect(Math.min(...rows)).toBe(0);
-    const sib = ["b", "c", "d"].map((id) => rowOf(l.nodes[id].y));
+    const sib = ["b", "c", "d"].map((id) => rowOf(l.nodes[id]!.y));
     expect(new Set(sib).size).toBe(3);
     expect(l.height).toBe(120 + (Math.max(...rows) + 1) * 200);
     expect(Math.max(...rows)).toBeGreaterThanOrEqual(2);
@@ -95,16 +95,16 @@ describe("automatic placement", () => {
 
   test("a disconnected component starts after the last used column", () => {
     const l = layoutScene(mk({ a: {}, b: {}, c: {}, d: {} }, [["a", "b"], ["c", "d"]]));
-    expect(l.nodes.a.x).toBe(cx(0));
-    expect(l.nodes.b.x).toBe(cx(1));
-    expect(l.nodes.c.x).toBe(cx(2));
-    expect(l.nodes.d.x).toBe(cx(3));
+    expect(l.nodes.a!.x).toBe(cx(0));
+    expect(l.nodes.b!.x).toBe(cx(1));
+    expect(l.nodes.c!.x).toBe(cx(2));
+    expect(l.nodes.d!.x).toBe(cx(3));
     expect(l.width).toBe(120 + 4 * 240);
   });
 
   test("an isolated node (no links) goes after the connected component", () => {
     const l = layoutScene(mk({ a: {}, b: {}, z: {} }, [["a", "b"]]));
-    expect(l.nodes.z.x).toBe(cx(2));
+    expect(l.nodes.z!.x).toBe(cx(2));
   });
 
   test("no two auto-placed nodes share a cell", () => {
@@ -149,7 +149,7 @@ describe("groups", () => {
 
   test("canvas contains every group rectangle", () => {
     const l = layoutScene(mk({ a: { at: [0, 0], group: "g" } }, [], { g: { label: "G" } }));
-    const g = l.groups.g;
+    const g = l.groups.g!;
     expect(g.x + g.width).toBeLessThanOrEqual(l.width);
     expect(g.y + g.height).toBeLessThanOrEqual(l.height);
   });
@@ -163,13 +163,13 @@ describe("webrtc example", () => {
 
   test("column order and exact x values", async () => {
     const { layout: l } = await load();
-    expect(colOf(l.nodes.client.x)).toBe(0);
-    expect(l.nodes.client.x).toBe(180);
-    expect(l.nodes.r1.x).toBe(420);
-    expect(l.nodes.net.x).toBe(660);
-    for (const id of ["stun", "sig", "r2"]) expect(l.nodes[id].x).toBe(900);
-    expect(l.nodes.sam.x).toBe(1140);
-    expect(l.nodes.sam.x).toBeGreaterThan(l.nodes.r2.x);
+    expect(colOf(l.nodes.client!.x)).toBe(0);
+    expect(l.nodes.client!.x).toBe(180);
+    expect(l.nodes.r1!.x).toBe(420);
+    expect(l.nodes.net!.x).toBe(660);
+    for (const id of ["stun", "sig", "r2"]) expect(l.nodes[id]!.x).toBe(900);
+    expect(l.nodes.sam!.x).toBe(1140);
+    expect(l.nodes.sam!.x).toBeGreaterThan(l.nodes.r2!.x);
     expect(l.width).toBe(1320);
   });
 
@@ -177,24 +177,24 @@ describe("webrtc example", () => {
     const { layout: l } = await load();
     const ids = Object.keys(l.nodes);
     expect(ids).toEqual(["client", "r1", "net", "stun", "sig", "r2", "sam"]);
-    const rows = ids.map((id) => rowOf(l.nodes[id].y));
+    const rows = ids.map((id) => rowOf(l.nodes[id]!.y));
     for (const r of rows) expect(Number.isInteger(r)).toBe(true);
     expect(Math.min(...rows)).toBe(0);
-    expect(new Set(ids.map((id) => `${l.nodes[id].x},${l.nodes[id].y}`)).size).toBe(7);
+    expect(new Set(ids.map((id) => `${l.nodes[id]!.x},${l.nodes[id]!.y}`)).size).toBe(7);
     expect(l.height).toBe(120 + (Math.max(...rows) + 1) * 200);
   });
 
   test("group sams-home wraps r2 and sam and no other node", async () => {
     const { layout: l } = await load();
-    const g = l.groups["sams-home"];
+    const g = l.groups["sams-home"]!;
     const inside = (id: string) => {
-      const p = l.nodes[id];
+      const p = l.nodes[id]!;
       return p.x >= g.x && p.x <= g.x + g.width && p.y >= g.y && p.y <= g.y + g.height;
     };
     expect(inside("r2")).toBe(true);
     expect(inside("sam")).toBe(true);
     for (const id of ["client", "r1", "net", "stun", "sig"]) expect(inside(id)).toBe(false);
-    const ys = [l.nodes.r2.y, l.nodes.sam.y];
+    const ys = [l.nodes.r2!.y, l.nodes.sam!.y];
     expect(g).toEqual({
       x: 900 - 84,
       y: Math.min(...ys) - 84 - 24,
@@ -211,7 +211,7 @@ describe("webrtc example", () => {
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(l.height);
     }
-    const g = l.groups["sams-home"];
+    const g = l.groups["sams-home"]!;
     expect(g.x).toBeGreaterThanOrEqual(0);
     expect(g.y).toBeGreaterThanOrEqual(0);
     expect(g.x + g.width).toBeLessThanOrEqual(l.width);

@@ -18,6 +18,13 @@
   (T-20261114-5)
 - Deferred: steps inside a `parallel` block share the block's "chapter N, step M" label, so two bad
   children give the same message and differ only in `path`. Revisit in M3. (T-20261114-5)
+- tdd-guide must run `bun run typecheck` on its tests before handing over (`noUncheckedIndexedAccess`
+  broke about 60 lines in M2), count fixtures with the same filter as the code (`*.svg`, not
+  `ls | wc -l`), and check fractional or rounding cases by hand against the spec formula. Three test
+  bugs in M2 came from skipping this. (T-20261114-7)
+- Only `icons/isoflow/block.svg` has a `<style>` block (classes `.st0` to `.st5`, not scoped). Safe
+  today, but it would clash if another icon with a style block joined the same page. Scope or
+  inline the styles if more such icons are added. (T-20261114-9)
 - The icon enum in `schema/scene.schema.json` is a static list. `test/schema.test.ts` fails if it
   drifts from `icons/isoflow/`. Update the schema and run `bun run gen:types` when icons change.
   (T-20261114-1)

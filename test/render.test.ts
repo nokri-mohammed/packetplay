@@ -18,8 +18,8 @@ const fakeIcon = (name: string): Icon => ({
 type Tag = { name: string; attrs: Record<string, string>; index: number };
 const tags = (svg: string): Tag[] =>
   [...svg.matchAll(/<([A-Za-z][\w-]*)((?:\s+[\w:-]+="[^"]*")*)\s*\/?>/g)].map((m) => ({
-    name: m[1],
-    attrs: Object.fromEntries([...m[2].matchAll(/([\w:-]+)="([^"]*)"/g)].map((a) => [a[1], a[2]])),
+    name: m[1]!,
+    attrs: Object.fromEntries([...m[2]!.matchAll(/([\w:-]+)="([^"]*)"/g)].map((a) => [a[1]!, a[2]!])),
     index: m.index!,
   }));
 const find = (svg: string, name: string, attr?: [string, string]) =>
@@ -49,7 +49,7 @@ const render = (s: Scene = scene(), l: Layout = layout2) => renderSvg(s, l, { ic
 describe("root and title", () => {
   test("root svg attributes", () => {
     const svg = render();
-    const root = tags(svg)[0];
+    const root = tags(svg)[0]!;
     expect(root.name).toBe("svg");
     expect(root.attrs).toEqual({
       xmlns: "http://www.w3.org/2000/svg",
@@ -63,7 +63,7 @@ describe("root and title", () => {
   test("title element comes first inside the svg", () => {
     const svg = render();
     expect(svg).toContain("<title>Two nodes</title>");
-    expect(tags(svg)[1].name).toBe("title");
+    expect(tags(svg)[1]!.name).toBe("title");
   });
 
   test("no animation, no script, no xml prolog", () => {
@@ -109,19 +109,19 @@ describe("defs", () => {
 
   test("default icons function is loadIcon (real viewBox appears)", () => {
     const svg = renderSvg(scene(), layout2);
-    expect(find(svg, "symbol", ["id", "icon-laptop"])[0].attrs.viewBox).toBe("0 0 541.1 513.1");
+    expect(find(svg, "symbol", ["id", "icon-laptop"])[0]!.attrs.viewBox).toBe("0 0 541.1 513.1");
   });
 });
 
 describe("nodes and links", () => {
   test("node group transform, use box and labels", () => {
     const svg = render();
-    const a = find(svg, "g", ["data-node", "a"])[0];
+    const a = find(svg, "g", ["data-node", "a"])[0]!;
     expect(a.attrs.transform).toBe("translate(180,160)");
-    expect(find(svg, "g", ["data-node", "b"])[0].attrs.transform).toBe("translate(420,160)");
+    expect(find(svg, "g", ["data-node", "b"])[0]!.attrs.transform).toBe("translate(420,160)");
     const uses = find(svg, "use");
-    expect(uses[0].attrs).toEqual({ href: "#icon-laptop", x: "-48", y: "-48", width: "96", height: "96" });
-    expect(uses[1].attrs).toEqual({ href: "#icon-server", x: "-48", y: "-48", width: "96", height: "96" });
+    expect(uses[0]!.attrs).toEqual({ href: "#icon-laptop", x: "-48", y: "-48", width: "96", height: "96" });
+    expect(uses[1]!.attrs).toEqual({ href: "#icon-server", x: "-48", y: "-48", width: "96", height: "96" });
     expect(svg).toMatch(/<text class="label"[^>]*>Alpha<\/text>/);
     expect(svg).toMatch(/<text class="label"[^>]*>Beta<\/text>/);
   });
@@ -135,8 +135,8 @@ describe("nodes and links", () => {
   test("one line per link, centre to centre", () => {
     const lines = find(render(), "line");
     expect(lines.length).toBe(1);
-    expect(lines[0].attrs["data-link"]).toBe("a--b");
-    expect([lines[0].attrs.x1, lines[0].attrs.y1, lines[0].attrs.x2, lines[0].attrs.y2]).toEqual(["180", "160", "420", "160"]);
+    expect(lines[0]!.attrs["data-link"]).toBe("a--b");
+    expect([lines[0]!.attrs.x1, lines[0]!.attrs.y1, lines[0]!.attrs.x2, lines[0]!.attrs.y2]).toEqual(["180", "160", "420", "160"]);
   });
 
   test("nodes keep declaration order", () => {
@@ -168,8 +168,8 @@ describe("groups", () => {
     expect(ids).toEqual(["h", "g"]);
     const rects = find(svg, "rect").filter((r) => r.attrs.width !== "10");
     expect(rects.length).toBe(2);
-    expect([rects[0].attrs.x, rects[0].attrs.y, rects[0].attrs.width, rects[0].attrs.height]).toEqual(["336", "28", "168", "192"]);
-    expect([rects[1].attrs.x, rects[1].attrs.y, rects[1].attrs.width, rects[1].attrs.height]).toEqual(["576", "28", "168", "192"]);
+    expect([rects[0]!.attrs.x, rects[0]!.attrs.y, rects[0]!.attrs.width, rects[0]!.attrs.height]).toEqual(["336", "28", "168", "192"]);
+    expect([rects[1]!.attrs.x, rects[1]!.attrs.y, rects[1]!.attrs.width, rects[1]!.attrs.height]).toEqual(["576", "28", "168", "192"]);
     expect(svg).toMatch(/<text class="group-label"[^>]*>Home<\/text>/);
     expect(svg).toMatch(/<text class="group-label"[^>]*>Gee<\/text>/);
   });
@@ -205,7 +205,7 @@ describe("escaping", () => {
   test("title, aria-label, labels and subs are escaped", () => {
     const svg = render(esc);
     expect(svg).toContain("<title>Tom &amp; &quot;Jerry&quot; &lt;1&gt;</title>");
-    expect(tags(svg)[0].attrs["aria-label"]).toBe("Tom &amp; &quot;Jerry&quot; &lt;1&gt;");
+    expect(tags(svg)[0]!.attrs["aria-label"]).toBe("Tom &amp; &quot;Jerry&quot; &lt;1&gt;");
     expect(svg).toMatch(/<text class="label"[^>]*>Sam(&#39;|&apos;)s laptop<\/text>/);
     expect(svg).toMatch(/<text class="sub"[^>]*>a&lt;b &amp; c&gt;d<\/text>/);
     expect(svg).toMatch(/<text class="label"[^>]*>Say &quot;hi&quot;<\/text>/);
@@ -249,7 +249,7 @@ describe("webrtc example", () => {
     ]);
     expect(find(svg, "g").filter((g) => g.attrs["data-group"]).map((g) => g.attrs["data-group"])).toEqual(["sams-home"]);
     expect(find(svg, "symbol").map((t) => t.attrs.id)).toEqual(["icon-cloud", "icon-laptop", "icon-router", "icon-server"]);
-    expect(tags(svg)[0].attrs.viewBox).toBe("0 0 1320 " + l.height);
+    expect(tags(svg)[0]!.attrs.viewBox).toBe("0 0 1320 " + l.height);
     expect(svg).toMatch(/Sam(&#39;|&apos;)s laptop/);
   });
 
