@@ -68,10 +68,22 @@ are done by the manager only.
 
 ## Report
 
-<The agent fills this in when finished. Add the line `Status: done` (or `blocked`) at the top of
-this section, then:>
+Status: done
 
-- **Did:**
+- **Did:** Added `package.json` (MIT, module, scripts `test`, `typecheck`, `gen:types`), `tsconfig.json`
+  (strict), `schema/scene.schema.json` (draft 2020-12, `additionalProperties: false` everywhere, field
+  descriptions, icon enum taken from the 37 files in `icons/isoflow/`), `scripts/gen-types.ts`,
+  `src/index.ts` (re-exports types), generated `src/types.generated.ts`, and `test/schema.test.ts`
+  (6 tests: both examples validate; unknown key, step without from/to, three-id link fail; icon enum
+  matches the icons folder). Dependencies: runtime `yaml`, `ajv`; dev `typescript`, `@types/bun`,
+  `json-schema-to-typescript`. Nothing committed. `bun.lock` created.
 - **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+  - `bun test`: `6 pass, 0 fail, 6 expect() calls`
+  - `bun run typecheck`: `$ tsc --noEmit`, exit 0
+  - `bun run gen:types` run twice: output identical (diff empty)
+  - `./scripts/check-public.sh --all`: exit 0
+- **Left / needs a decision:** The icon enum is static in the schema; the test fails if it drifts from
+  `icons/isoflow/`, but there is no generator for it. The schema also allows an optional `$schema` key
+  so JSON files can reference it. `tracks` and `groups` are optional, `title`, `nodes`, `links`,
+  `chapters` are required. Test-first order was not followed here (setup ticket).
+- **Lessons:** `Ajv2020` (`ajv/dist/2020`) is needed for draft 2020-12 schemas; default Ajv rejects them.

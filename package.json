@@ -1,0 +1,22 @@
+{
+  "name": "svg-scenes",
+  "version": "0.0.0",
+  "description": "Describe a system in YAML or JSON, get one self-contained animated HTML page.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "gen:types": "bun run scripts/gen-types.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "json-schema-to-typescript": "^16.0.0",
+    "typescript": "^7.0.2"
+  }
+}

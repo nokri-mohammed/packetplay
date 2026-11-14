@@ -1,0 +1,335 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/svg-scenes/scene.schema.json",
+  "title": "Scene",
+  "description": "An svg-scenes scene: nodes, links, tracks and chapters of steps. The same model is used for YAML and JSON files.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "nodes",
+    "links",
+    "chapters"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional schema reference, so JSON files can point at this schema."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Title of the scene, shown above the diagram."
+    },
+    "nodes": {
+      "type": "object",
+      "description": "Boxes in the diagram, keyed by node id.",
+      "additionalProperties": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "groups": {
+      "type": "object",
+      "description": "Named areas that nodes can belong to, keyed by group id.",
+      "additionalProperties": {
+        "$ref": "#/$defs/group"
+      }
+    },
+    "links": {
+      "type": "array",
+      "description": "Connections between nodes, as pairs of node ids. Messages travel along links.",
+      "items": {
+        "$ref": "#/$defs/link"
+      }
+    },
+    "tracks": {
+      "type": "object",
+      "description": "Message categories with a label and a colour, keyed by track id.",
+      "additionalProperties": {
+        "$ref": "#/$defs/track"
+      }
+    },
+    "chapters": {
+      "type": "array",
+      "description": "Ordered chapters, each with a list of steps.",
+      "items": {
+        "$ref": "#/$defs/chapter"
+      }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "icon"
+      ],
+      "description": "One node in the diagram.",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Text shown under the icon."
+        },
+        "icon": {
+          "type": "string",
+          "enum": [
+            "block",
+            "cache",
+            "cardterminal",
+            "cloud",
+            "cronjob",
+            "cube",
+            "desktop",
+            "diamond",
+            "dns",
+            "document",
+            "firewall",
+            "function-module",
+            "image",
+            "laptop",
+            "loadbalancer",
+            "lock",
+            "mail",
+            "mailmultiple",
+            "mobiledevice",
+            "office",
+            "package-module",
+            "paymentcard",
+            "plane",
+            "printer",
+            "pyramid",
+            "queue",
+            "router",
+            "server",
+            "speech",
+            "sphere",
+            "storage",
+            "switch-module",
+            "tower",
+            "truck",
+            "truck-2",
+            "user",
+            "vm"
+          ],
+          "description": "File name stem of an SVG in icons/isoflow/."
+        },
+        "sub": {
+          "type": "string",
+          "description": "Small second line under the label."
+        },
+        "group": {
+          "type": "string",
+          "description": "Id of the group this node belongs to."
+        },
+        "at": {
+          "type": "array",
+          "description": "Optional manual position [x, y] on the layout grid.",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label"
+      ],
+      "description": "A named area around some nodes.",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Text shown on the group."
+        }
+      }
+    },
+    "link": {
+      "type": "array",
+      "description": "A connection between two node ids.",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "string"
+      }
+    },
+    "track": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "color"
+      ],
+      "description": "A message category.",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Name shown in the legend."
+        },
+        "color": {
+          "description": "A named colour or a hex colour such as #3b82f6.",
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "blue",
+                "orange",
+                "green",
+                "red",
+                "purple",
+                "yellow",
+                "pink",
+                "teal",
+                "gray"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+            }
+          ]
+        }
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "steps"
+      ],
+      "description": "A group of steps that tells one part of the story.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Chapter title."
+        },
+        "desc": {
+          "type": "string",
+          "description": "Optional text shown when the chapter starts."
+        },
+        "steps": {
+          "type": "array",
+          "description": "Steps in order.",
+          "items": {
+            "$ref": "#/$defs/stepOrParallel"
+          }
+        }
+      }
+    },
+    "stepOrParallel": {
+      "description": "A single step, or a parallel block of steps.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/step"
+        },
+        {
+          "$ref": "#/$defs/parallel"
+        }
+      ]
+    },
+    "parallel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parallel"
+      ],
+      "description": "Steps that run at the same time.",
+      "properties": {
+        "parallel": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The steps to run together.",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "description": "One message travelling from a node to another.",
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Id of the node the message starts at."
+        },
+        "to": {
+          "type": "string",
+          "description": "Id of the node the message ends at."
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Node ids the route must pass through, in order."
+        },
+        "track": {
+          "type": "string",
+          "description": "Id of the track (colour and legend entry)."
+        },
+        "label": {
+          "type": "string",
+          "description": "Short text on the message."
+        },
+        "desc": {
+          "type": "string",
+          "description": "Longer explanation shown in the caption panel."
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Key/value pairs shown on the data card."
+        },
+        "at": {
+          "type": "object",
+          "description": "Per-node changes while the message passes, keyed by node id.",
+          "additionalProperties": {
+            "$ref": "#/$defs/hop"
+          }
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "packet",
+            "flow"
+          ],
+          "description": "packet: one message hops along the route. flow: a continuous stream."
+        },
+        "both": {
+          "type": "boolean",
+          "description": "Show the traffic in both directions."
+        },
+        "pause": {
+          "type": "boolean",
+          "description": "Pause the player after this step."
+        }
+      }
+    },
+    "hop": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What changes at a node when the message arrives.",
+      "properties": {
+        "set": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Data values to change on the card at this node."
+        },
+        "desc": {
+          "type": "string",
+          "description": "Explanation shown when the message reaches this node."
+        }
+      }
+    }
+  }
+}
