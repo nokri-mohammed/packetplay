@@ -163,19 +163,18 @@ export function revealPop(t: number, atMs: number): { scale: number; rings: { r:
   return { scale, rings };
 }
 
-/** Length, amplitude (world px) and number of swings of a node shake. */
+/** Length (ms) and height (world px) of the bump a node makes when a packet arrives or Enter is pressed. */
 export const SHAKE_MS = 450;
-export const SHAKE_AMP = 5;
-export const SHAKE_CYCLES = 4;
+export const SHAKE_AMP = 6;
 
 /**
- * Horizontal damped shake of a node that starts at `atMs`. With u = (t - atMs) / 450:
- * dx = 5 * (1 - u) * sin(2 * pi * 4 * u) inside [atMs, atMs + 450], else 0. dy is always 0.
+ * A slight bump of a node that starts at `atMs`: it lifts and settles once. With u = (t - atMs) / 450:
+ * dy = -6 * sin(pi * u) inside [atMs, atMs + 450], else 0. dx is always 0.
  */
 export function nodeShake(t: number, atMs: number): { dx: number; dy: number } {
   if (t < atMs || t > atMs + SHAKE_MS) return { dx: 0, dy: 0 };
   const u = (t - atMs) / SHAKE_MS;
-  return { dx: SHAKE_AMP * (1 - u) * Math.sin(2 * Math.PI * SHAKE_CYCLES * u), dy: 0 };
+  return { dx: 0, dy: -SHAKE_AMP * Math.sin(Math.PI * u) + 0 }; // + 0 turns -0 into 0
 }
 
 /**

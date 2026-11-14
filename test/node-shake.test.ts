@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Scene } from "../src/index.ts";
 import { layoutScene, type Layout } from "../src/layout.ts";
 import { loadScene } from "../src/load.ts";
-import { SHAKE_AMP, SHAKE_CYCLES, SHAKE_MS, frameAt, nodeShake, shakeEvents, shakeOffset } from "../src/player-core.ts";
+import { SHAKE_AMP, SHAKE_MS, frameAt, nodeShake, shakeEvents, shakeOffset } from "../src/player-core.ts";
 import { compileTimeline } from "../src/timeline.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -24,24 +24,21 @@ const tl = compileTimeline(sc, layout);
 
 describe("nodeShake", () => {
   test("constants", () => {
-    expect([SHAKE_MS, SHAKE_AMP, SHAKE_CYCLES]).toEqual([450, 5, 4]);
+    expect([SHAKE_MS, SHAKE_AMP]).toEqual([450, 6]);
   });
   test("zero before, at start, at the end and after", () => {
     expect(nodeShake(999, 1000)).toEqual({ dx: 0, dy: 0 });
     expect(nodeShake(1000, 1000)).toEqual({ dx: 0, dy: 0 });
-    expect(nodeShake(1000 + 450, 1000).dx).toBeCloseTo(0, 9);
+    expect(nodeShake(1000 + 450, 1000).dy).toBeCloseTo(0, 9);
     expect(nodeShake(1451, 1000)).toEqual({ dx: 0, dy: 0 });
   });
-  test("a quarter of a cycle: u = 1/16, sin(pi/2) = 1, dx = 5 * 15/16 = 4.6875", () => {
-    const s = nodeShake(1000 + 450 / 16, 1000);
-    expect(s.dx).toBeCloseTo(4.6875, 9);
-    expect(s.dy).toBe(0);
+  test("one sixth: u = 1/6, sin(pi/6) = 0.5, dy = -6 * 0.5 = -3", () => {
+    const s = nodeShake(1000 + 75, 1000);
+    expect(s.dy).toBeCloseTo(-3, 9);
+    expect(s.dx).toBe(0);
   });
-  test("three quarters of a cycle: u = 3/16, sin(3pi/2) = -1, dx = -5 * 13/16 = -4.0625", () => {
-    expect(nodeShake(1000 + (3 * 450) / 16, 1000).dx).toBeCloseTo(-4.0625, 9);
-  });
-  test("middle: u = 0.5, sin(4 pi) = 0", () => {
-    expect(nodeShake(1225, 1000).dx).toBeCloseTo(0, 9);
+  test("middle: u = 0.5, sin(pi/2) = 1, dy = -6 (the top of the bump)", () => {
+    expect(nodeShake(1225, 1000).dy).toBeCloseTo(-6, 9);
   });
 });
 
@@ -49,8 +46,8 @@ describe("shakeOffset", () => {
   test("the latest event at or before t wins", () => {
     expect(shakeOffset(undefined, 100)).toEqual({ dx: 0, dy: 0 });
     expect(shakeOffset([500, 1000], 400)).toEqual({ dx: 0, dy: 0 });
-    expect(shakeOffset([500, 1000], 1000 + 450 / 16).dx).toBeCloseTo(4.6875, 9);
-    expect(shakeOffset([500, 600], 600 + 450 / 16).dx).toBeCloseTo(4.6875, 9);
+    expect(shakeOffset([500, 1000], 1000 + 75).dy).toBeCloseTo(-3, 9);
+    expect(shakeOffset([500, 600], 600 + 75).dy).toBeCloseTo(-3, 9);
   });
 });
 
