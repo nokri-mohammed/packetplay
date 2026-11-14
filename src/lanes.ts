@@ -50,3 +50,15 @@ export function lane(layout: Layout, from: string, to: string): Lane {
     ay2: y2 - uy * LANE_TRIM,
   };
 }
+
+/**
+ * Where a packet travels on a lane: the motion line trimmed by LANE_TRIM at both ends (the drawn arrow),
+ * but never by more than half the lane, so a short lane stays valid and never reverses.
+ */
+export function lanePacketEnds(l: Lane): { x1: number; y1: number; x2: number; y2: number } {
+  const len = Math.hypot(l.x2 - l.x1, l.y2 - l.y1);
+  if (len >= 2 * LANE_TRIM) return { x1: l.ax1, y1: l.ay1, x2: l.ax2, y2: l.ay2 };
+  const mx = (l.x1 + l.x2) / 2;
+  const my = (l.y1 + l.y2) / 2;
+  return { x1: mx, y1: my, x2: mx, y2: my };
+}

@@ -45,3 +45,4 @@
 - A plain YAML scalar value (for example `desc:`) must not contain `: `, or the parser fails; use quotes or reword. Groups on a chain of nodes come out as adjacent bands sharing an edge. (T-20261114-21)
 - A ticket line "other examples build unchanged" should mean scene, layout and timing, not byte size: adding timeline fields changes page JSON for every example. (T-20261114-22)
 - The "used before revealed" check needs the routed path, so route validation returns its path. A back lane is already drawn in its own travel direction, so one dash offset serves both lanes of a `both` step. (T-20261114-22)
+- Packet endpoints and the drawn arrow must be the same points, so lane geometry lives in one `lanes.ts` helper (`lanePacketEnds`). Restore a line's attributes from a snapshot taken at load rather than recomputing the base values. Arrowhead colour per track is open (needs `context-stroke` or a marker per track). (T-20261114-23)

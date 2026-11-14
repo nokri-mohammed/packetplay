@@ -1,5 +1,5 @@
 import type { Layout } from "./layout.ts";
-import { lane, laneId } from "./lanes.ts";
+import { lane, lanePacketEnds, laneId } from "./lanes.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
@@ -33,6 +33,7 @@ export interface HopTL {
   to: string;
   /** Lane id of this hop's direction, `${from}--${to}`. */
   link: string;
+  /** Trimmed ends: LANE_TRIM short of each node centre (the arrow ends), clamped for short hops. */
   x1: number;
   y1: number;
   x2: number;
@@ -114,6 +115,8 @@ function compileStep(
     const to = path[i + 1] as string;
     const fwd = lane(layout, from, to);
     const rev = lane(layout, to, from);
+    const fe = lanePacketEnds(fwd);
+    const re = lanePacketEnds(rev);
     const data: Record<string, unknown> = { ...(step.data ?? {}) };
     for (let k = 0; k <= i; k++) {
       const set = step.at?.[path[k] as string]?.set;
@@ -123,11 +126,11 @@ function compileStep(
       from,
       to,
       link: laneId(from, to),
-      x1: fwd.x1,
-      y1: fwd.y1,
-      x2: fwd.x2,
-      y2: fwd.y2,
-      back: { link: rev.id, x1: rev.x1, y1: rev.y1, x2: rev.x2, y2: rev.y2 },
+      x1: fe.x1,
+      y1: fe.y1,
+      x2: fe.x2,
+      y2: fe.y2,
+      back: { link: rev.id, x1: re.x1, y1: re.y1, x2: re.x2, y2: re.y2 },
       startMs: mode === "flow" ? startMs : startMs + i * (HOP_MS + NODE_DWELL_MS),
       endMs: mode === "flow" ? startMs + FLOW_MS : startMs + i * (HOP_MS + NODE_DWELL_MS) + HOP_MS,
       data,

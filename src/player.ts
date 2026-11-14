@@ -110,11 +110,6 @@ const scene = svg.querySelector("g.scene") as SVGGElement;
 const overlay = document.createElementNS(SVGNS, "g");
 overlay.setAttribute("pointer-events", "none");
 scene.appendChild(overlay);
-// The dotted routes sit above the static links and below the nodes and packets.
-const routeLayer = document.createElementNS(SVGNS, "g");
-routeLayer.setAttribute("pointer-events", "none");
-scene.insertBefore(routeLayer, svg.querySelector("g.nodes"));
-
 // Node centres come from the rendered SVG (the timeline only knows lane coordinates).
 const nodePos = new Map<string, { x: number; y: number }>();
 for (const g of svg.querySelectorAll("g[data-node]")) {
@@ -214,23 +209,47 @@ function packetMarkup(
 }
 let nextClip = 0;
 
-const ROUTE_OPACITY = 0.85;
+// The highlight is the arrow itself: the static lane line of each hop of an active step turns the track
+// colour, becomes dotted and flows toward the destination. Each lane line is drawn in its own travel
+// direction, so one negative dash offset moves the dashes along it. The arrowhead keeps its colour:
+// the shared marker is filled with currentColor and one marker per track would be needed.
+const ATTRS = ["stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "stroke-dashoffset", "stroke-opacity"] as const;
+const laneLines = new Map<string, { el: Element; orig: (string | null)[]; base: number }>();
+for (const el of svg.querySelectorAll("line[data-link]")) {
+  const id = el.getAttribute("data-link");
+  if (!id) continue;
+  const orig = ATTRS.map((a) => el.getAttribute(a));
+  laneLines.set(id, { el, orig, base: Number(el.getAttribute("stroke-opacity") ?? 1) });
+}
 
-// Dotted route of every active packet-mode or flow step, on the same lanes the packets travel. Each lane
-// is drawn in its own travel direction, so one negative dash offset moves the dashes along it.
 function drawRoutes(t: number, reducedStep: StepTL | null): void {
-  let out = "";
+  const on = new Map<string, { color: string; opacity: number; offset: number }>();
   const steps = reducedStep ? [reducedStep] : tl.steps;
   for (const s of steps) {
     const r = reducedStep ? { hops: s.hops, opacity: 1, offset: 0 } : routeHighlight(t, s);
     if (!r || r.opacity <= 0) continue;
-    const attrs = `fill="none" stroke="${s.color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9" stroke-dashoffset="${r.offset.toFixed(1)}" stroke-opacity="${(ROUTE_OPACITY * r.opacity).toFixed(3)}"`;
     for (const h of r.hops) {
-      out += `<line x1="${h.x1.toFixed(1)}" y1="${h.y1.toFixed(1)}" x2="${h.x2.toFixed(1)}" y2="${h.y2.toFixed(1)}" ${attrs}/>`;
-      if (s.both) out += `<line x1="${h.back.x1.toFixed(1)}" y1="${h.back.y1.toFixed(1)}" x2="${h.back.x2.toFixed(1)}" y2="${h.back.y2.toFixed(1)}" ${attrs}/>`;
+      on.set(h.link, { color: s.color, opacity: r.opacity, offset: r.offset });
+      if (s.both) on.set(h.back.link, { color: s.color, opacity: r.opacity, offset: r.offset });
     }
   }
-  routeLayer.innerHTML = out;
+  for (const [id, ln] of laneLines) {
+    const h = on.get(id);
+    if (!h) {
+      ATTRS.forEach((a, i) => {
+        const v = ln.orig[i] as string | null | undefined;
+        if (v === null || v === undefined) ln.el.removeAttribute(a);
+        else ln.el.setAttribute(a, v);
+      });
+      continue;
+    }
+    ln.el.setAttribute("stroke", h.color);
+    ln.el.setAttribute("stroke-width", "3");
+    ln.el.setAttribute("stroke-dasharray", "2 9");
+    ln.el.setAttribute("stroke-linecap", "round");
+    ln.el.setAttribute("stroke-dashoffset", h.offset.toFixed(1));
+    ln.el.setAttribute("stroke-opacity", (ln.base + (1 - ln.base) * h.opacity).toFixed(3));
+  }
 }
 
 // Hidden nodes: the node group and every lane touching it share one opacity, from the reveal time.

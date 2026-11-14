@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Scene } from "../src/index.ts";
 import { lane } from "../src/lanes.ts";
-import { layoutScene } from "../src/layout.ts";
+import { layoutScene, type Layout } from "../src/layout.ts";
 import { loadScene } from "../src/load.ts";
 import { frameAt } from "../src/player-core.ts";
 import { HOP_MS, compileTimeline } from "../src/timeline.ts";
@@ -33,16 +33,16 @@ describe("timeline uses lanes", () => {
   const tl = compileTimeline(scene, layout);
   const [s1, s2, s3] = tl.steps;
 
-  test("hop link is the lane id of its direction and the coordinates are the lane motion line", () => {
+  test("hop link is the lane id of its direction and the coordinates are the trimmed arrow ends", () => {
     expect(s1!.hops.map((h) => h.link)).toEqual(["a--b", "b--c"]);
     const l = lane(layout, "a", "b");
-    expect([s1!.hops[0]!.x1, s1!.hops[0]!.y1, s1!.hops[0]!.x2, s1!.hops[0]!.y2]).toEqual([l.x1, l.y1, l.x2, l.y2]);
+    expect([s1!.hops[0]!.x1, s1!.hops[0]!.y1, s1!.hops[0]!.x2, s1!.hops[0]!.y2]).toEqual([l.ax1, l.ay1, l.ax2, l.ay2]);
   });
 
   test("back is the other lane of the same link", () => {
     const h = s1!.hops[0]!;
     const r = lane(layout, "b", "a");
-    expect(h.back).toEqual({ link: "b--a", x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2 });
+    expect(h.back).toEqual({ link: "b--a", x1: r.ax1, y1: r.ay1, x2: r.ax2, y2: r.ay2 });
   });
 
   test("a reply step uses the reverse lanes automatically", () => {
@@ -125,5 +125,77 @@ describe("timing with node dwell", () => {
     expect([final.packets[0]!.x, final.packets[0]!.y]).toEqual([last.x2, last.y2]);
     expect(final.packets[0]!.label).toBe(st.label);
     expect(final.packets[0]!.data).toEqual(last.data);
+  });
+});
+
+describe("pass-through hop endpoints", () => {
+  // Hand calculations, LANE_OFFSET = 8, LANE_TRIM = 44.
+  const mk = (nodes: Record<string, [number, number]>, from: string, to: string) => {
+    const sc = {
+      title: "T",
+      nodes: Object.fromEntries(Object.keys(nodes).map((k) => [k, { label: k, icon: "server" }])),
+      links: [[from, to]],
+      chapters: [{ title: "c", steps: [{ from, to }] }],
+    } as unknown as Scene;
+    const layout = {
+      width: 0,
+      height: 0,
+      origin: { x: 0, y: 0 },
+      groups: {},
+      nodes: Object.fromEntries(Object.entries(nodes).map(([k, [x, y]]) => [k, { x, y, i: 0, j: 0 }])),
+    } as Layout;
+    return compileTimeline(sc, layout).steps[0]!.hops[0]!;
+  };
+
+  test("horizontal hop (0,0) to (200,0): lane is 8 px down, ends 44 px in from each centre", () => {
+    // u = (1,0), offset = (0,8): x1 = 0 + 44 = 44, x2 = 200 - 44 = 156, y = 8
+    const h = mk({ a: [0, 0], b: [200, 0] }, "a", "b");
+    expect([h.x1, h.y1, h.x2, h.y2]).toEqual([44, 8, 156, 8]);
+    // reverse lane runs 8 px up: x from 156 to 44 at y = -8
+    expect([h.back.x1, h.back.y1, h.back.x2, h.back.y2]).toEqual([156, -8, 44, -8]);
+  });
+
+  test("diagonal hop (0,0) to (60,80): length 100, u = (0.6,0.8), offset = (-6.4,4.8)", () => {
+    // x1 = -6.4 + 0.6*44 = 20, y1 = 4.8 + 0.8*44 = 40, x2 = 53.6 - 26.4 = 27.2, y2 = 84.8 - 35.2 = 49.6
+    const h = mk({ a: [0, 0], d: [60, 80] }, "a", "d");
+    expect(h.x1).toBeCloseTo(20, 9);
+    expect(h.y1).toBeCloseTo(40, 9);
+    expect(h.x2).toBeCloseTo(27.2, 9);
+    expect(h.y2).toBeCloseTo(49.6, 9);
+  });
+
+  test("short hop (0,0) to (60,0): 60 < 2 * 44, so both ends clamp to the lane midpoint, never reversing", () => {
+    // midpoint of the lane (0,8) to (60,8) is (30,8); the reverse lane midpoint is (30,-8)
+    const h = mk({ a: [0, 0], e: [60, 0] }, "a", "e");
+    expect([h.x1, h.y1, h.x2, h.y2]).toEqual([30, 8, 30, 8]);
+    expect([h.back.x1, h.back.y1, h.back.x2, h.back.y2]).toEqual([30, -8, 30, -8]);
+  });
+
+  test("a hop of exactly 2 * 44 = 88 px keeps full trim and has zero length", () => {
+    const h = mk({ a: [0, 0], f: [88, 0] }, "a", "f");
+    expect([h.x1, h.x2]).toEqual([44, 44]);
+  });
+
+  test("the packet rests at the near edge, then the next hop starts at its own far edge", () => {
+    const sc = {
+      title: "T",
+      nodes: { a: { label: "a", icon: "server" }, b: { label: "b", icon: "server" }, c: { label: "c", icon: "server" } },
+      links: [["a", "b"], ["b", "c"]],
+      chapters: [{ title: "c", steps: [{ from: "a", to: "c" }] }],
+    } as unknown as Scene;
+    const layout = {
+      width: 0,
+      height: 0,
+      origin: { x: 0, y: 0 },
+      groups: {},
+      nodes: { a: { x: 0, y: 0, i: 0, j: 0 }, b: { x: 200, y: 0, i: 0, j: 0 }, c: { x: 400, y: 0, i: 0, j: 0 } },
+    } as Layout;
+    const tl = compileTimeline(sc, layout);
+    const [h0, h1] = tl.steps[0]!.hops;
+    expect([h0!.x2, h1!.x1]).toEqual([156, 244]);
+    const rest = frameAt(tl, 2000).packets[0]!;
+    expect([rest.x, rest.y]).toEqual([156, 8]);
+    const next = frameAt(tl, h1!.startMs).packets[0]!;
+    expect([next.x, next.y]).toEqual([244, 8]);
   });
 });
