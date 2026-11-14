@@ -1,6 +1,10 @@
 {
   "title": "How a browser loads a website",
   "nodes": {
+    "you": {
+      "label": "You",
+      "icon": "user"
+    },
     "laptop": {
       "label": "Your laptop",
       "icon": "laptop"
@@ -27,6 +31,10 @@
   },
   "links": [
     [
+      "you",
+      "laptop"
+    ],
+    [
       "laptop",
       "router"
     ],
@@ -44,6 +52,10 @@
     ]
   ],
   "tracks": {
+    "visit": {
+      "label": "You visit the site",
+      "color": "blue"
+    },
     "dns": {
       "label": "DNS lookup (UDP)",
       "color": "purple"
@@ -63,7 +75,23 @@
   },
   "chapters": [
     {
-      "title": "1. Find the server's address (DNS)",
+      "title": "1. You visit a website",
+      "steps": [
+        {
+          "from": "you",
+          "to": "laptop",
+          "track": "visit",
+          "label": "Visit shop.example.com",
+          "desc": "You type the address into the browser and press Enter. Your browser only knows the name, so it must find the server's address first.",
+          "data": {
+            "action": "type the address",
+            "address": "shop.example.com"
+          }
+        }
+      ]
+    },
+    {
+      "title": "2. Find the server's address (DNS)",
       "steps": [
         {
           "from": "laptop",
@@ -110,7 +138,7 @@
       ]
     },
     {
-      "title": "2. Open a connection (TCP handshake)",
+      "title": "3. Open a connection (TCP handshake)",
       "steps": [
         {
           "from": "laptop",
@@ -178,7 +206,7 @@
       ]
     },
     {
-      "title": "3. Agree on encryption (TLS handshake)",
+      "title": "4. Agree on encryption (TLS handshake)",
       "steps": [
         {
           "from": "laptop",
@@ -218,7 +246,7 @@
       ]
     },
     {
-      "title": "4. Ask for the page (HTTPS)",
+      "title": "5. Ask for the page (HTTPS)",
       "steps": [
         {
           "from": "laptop",

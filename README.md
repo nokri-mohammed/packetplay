@@ -43,7 +43,7 @@ Three examples ship, each as YAML and as JSON:
 - [examples/webrtc.scene.yaml](examples/webrtc.scene.yaml): how a WebRTC call connects.
 - [examples/udp.scene.yaml](examples/udp.scene.yaml): how a UDP message travels (NAT rewriting the
   address, then a stream of datagrams).
-- [examples/website.scene.yaml](examples/website.scene.yaml): how a browser loads a website (DNS
+- [examples/website.scene.yaml](examples/website.scene.yaml): how a browser loads a website (you type the address, then DNS
   lookup, TCP handshake, TLS handshake, then the HTTPS request).
 
 ## CLI
