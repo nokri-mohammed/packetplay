@@ -37,6 +37,7 @@
   section" in words instead.
 - CEO rule (2026-11-14): when the CEO says he will test the product himself, skip tester and
   reviewer agents and browser automation. Keep only a small smoke test. (T-20261114-14)
+- Typecheck does not flag unused imports (no `noUnusedLocals`), so check imports by hand. A box drawn on the lane point covers the icons at every node: draw info boxes as a balloon with a gap of at least half the icon size. (T-20261114-18)
 - The icon enum in `schema/scene.schema.json` is a static list. `test/schema.test.ts` fails if it
   drifts from `icons/isoflow/`. Update the schema and run `bun run gen:types` when icons change.
   (T-20261114-1)

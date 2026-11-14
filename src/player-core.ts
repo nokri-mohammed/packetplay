@@ -85,6 +85,26 @@ export function packetRows(data: Record<string, unknown>, maxRows = 4, maxChars 
   return rows;
 }
 
+/** Distance from the lane dot to the near edge of its info box. Icons reach 48 px from a node centre. */
+export const BALLOON_GAP = 60;
+
+/**
+ * Position of a packet's info box. The box is centred on `x`. Direction 1 puts it above the dot
+ * (bottom edge at `y - BALLOON_GAP`), direction -1 below it (top edge at `y + BALLOON_GAP`).
+ * Returns the top edge `y` and `tetherY`, the box edge the tether line joins.
+ */
+export function balloonRect(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  direction: 1 | -1,
+): { x: number; y: number; tetherY: number } {
+  const left = x - width / 2;
+  if (direction === 1) return { x: left, y: y - BALLOON_GAP - height, tetherY: y - BALLOON_GAP };
+  return { x: left, y: y + BALLOON_GAP, tetherY: y + BALLOON_GAP };
+}
+
 /** Everything that is visible at time t. */
 export function frameAt(tl: Timeline, tMs: number): Frame {
   const t = tMs;

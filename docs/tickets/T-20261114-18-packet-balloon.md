@@ -69,9 +69,18 @@ CEO reported the problem on 2026-11-14 and said "go until everything is done".
 
 ## Report
 
-<The agent fills this in when finished. Start with `Status: done` (or `blocked`), then:>
+Status: done
 
-- **Did:**
-- **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+- **Did:** Added `BALLOON_GAP = 60` and `balloonRect` to `src/player-core.ts`. `src/player.ts` now draws, per packet, a dot (r 5, track colour) on the lane point, a thin tether (track colour, opacity 0.5) and the info box above the dot (direction 1) or below it (direction -1, the reply packet of a `both` step). Content, colours, font size, timing, lanes and flow tokens are unchanged. Reduced motion reuses the same drawing, so the static packet is a balloon above the destination node. New tests in `test/balloon.test.ts` (5 exact tests: gap constant, both directions, odd sizes, icon clearance). No existing test encoded the box position, so none needed changing.
+- **Verified (real output):** `bun test`: 175 pass, 0 fail (15 files). `bun run typecheck`: clean. `bun run build:examples`: wrote dist/webrtc.html (78727 bytes) and dist/udp.html (65465 bytes). `./scripts/check-public.sh --all`: exit 0. Not checked in a browser (CEO tests by hand).
+- **Browser checklist for the CEO:**
+  1. Open dist/udp.html and play: each packet is a small dot on the lane with its info box floating above, joined by a thin line.
+  2. Pause while a packet rests at a node: the box is above the icon and covers no icon or label.
+  3. Repeat on dist/webrtc.html.
+  4. In a `both` step, the forward packet's box is above and the reply packet's box is below its dot, so they do not stack.
+  5. Flow tokens in flow steps are still tiny packets on the lane with no box.
+  6. Zoom and pan: boxes, dots and tethers move and scale with the scene.
+  7. Reduced motion (OS setting): each step shows one static packet as a balloon above the destination node.
+  8. Near the top edge of the canvas a box may be cut off (no collision logic, as specced).
+- **Left / needs a decision:** Nothing blocking. The reply packet box has only a header strip because its data is empty. Not committed or pushed.
+- **Lessons:** Typecheck does not flag unused imports here (no `noUnusedLocals`), so check imports by hand.

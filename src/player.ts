@@ -3,6 +3,7 @@
 import { createTimer } from "animejs";
 import {
   SPEEDS,
+  balloonRect,
   PULSE_MS,
   clampTime,
   frameAt,
@@ -174,23 +175,34 @@ function onColor(hex: string): string {
   return lum > 0.6 ? "#0f172a" : "#ffffff";
 }
 
-// A packet is an upright rounded rectangle centred on its lane point: a header strip with the step
-// label in the track colour, and below it one row per piece of data it carries.
-function packetMarkup(x: number, y: number, color: string, label: string, data: Record<string, unknown>): string {
+// A packet is a dot on its lane point plus a balloon: an info box floating above the dot (below for a
+// reply packet) on a thin tether. The box has a header strip with the step label in the track colour,
+// and below it one row per piece of data it carries.
+function packetMarkup(
+  x: number,
+  y: number,
+  color: string,
+  label: string,
+  data: Record<string, unknown>,
+  direction: 1 | -1,
+): string {
   const title = packetTitle(label);
   const rows = packetRows(data);
   const longest = Math.max(title.length, ...rows.map((r) => r.length), 8);
   const w = Math.round(longest * PK_CHAR + 16);
   const h = PK_HEAD + (rows.length > 0 ? rows.length * PK_ROW + 8 : 0);
-  const x0 = (x - w / 2).toFixed(1);
-  const y0 = (y - h / 2).toFixed(1);
+  const box = balloonRect(x, y, w, h, direction);
+  const x0 = box.x.toFixed(1);
+  const y0 = box.y.toFixed(1);
   const id = `pk${nextClip++}`;
-  let out = `<clipPath id="${id}"><rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6"/></clipPath>`;
+  let out = `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${box.tetherY.toFixed(1)}" stroke="${color}" stroke-opacity="0.5" stroke-width="1.5"/>`;
+  out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${color}"/>`;
+  out += `<clipPath id="${id}"><rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6"/></clipPath>`;
   out += `<rect class="pk-bg" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6" stroke="${color}"/>`;
   out += `<g clip-path="url(#${id})"><rect x="${x0}" y="${y0}" width="${w}" height="${PK_HEAD}" fill="${color}"/></g>`;
-  out += `<text class="pk-tx" font-size="${PK_FONT}" font-weight="700" fill="${onColor(color)}" x="${(x - w / 2 + 8).toFixed(1)}" y="${(y - h / 2 + 14).toFixed(1)}">${esc(title)}</text>`;
+  out += `<text class="pk-tx" font-size="${PK_FONT}" font-weight="700" fill="${onColor(color)}" x="${(box.x + 8).toFixed(1)}" y="${(box.y + 14).toFixed(1)}">${esc(title)}</text>`;
   rows.forEach((r, i) => {
-    out += `<text class="pk-tx pk-row" font-size="${PK_FONT}" x="${(x - w / 2 + 8).toFixed(1)}" y="${(y - h / 2 + PK_HEAD + 6 + PK_ROW * (i + 0.75)).toFixed(1)}">${esc(r)}</text>`;
+    out += `<text class="pk-tx pk-row" font-size="${PK_FONT}" x="${(box.x + 8).toFixed(1)}" y="${(box.y + PK_HEAD + 6 + PK_ROW * (i + 0.75)).toFixed(1)}">${esc(r)}</text>`;
   });
   return out;
 }
@@ -206,7 +218,7 @@ function drawOverlay(f: Frame): void {
   }
   for (const fl of f.flows) out += flowDots(fl.stepId, fl.color, fl.both, fl.progress);
   for (const p of f.packets) {
-    out += packetMarkup(p.x, p.y, p.color, p.label, p.data);
+    out += packetMarkup(p.x, p.y, p.color, p.label, p.data, p.direction);
   }
   overlay.innerHTML = out;
 }
