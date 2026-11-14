@@ -6,6 +6,8 @@ import {
   PULSE_MS,
   clampTime,
   frameAt,
+  packetRows,
+  packetTitle,
   keyAction,
   nextTime,
   prevTime,
@@ -70,7 +72,6 @@ function applyView(): void {
     // Tile (0,0) centre stays under the scene origin.
     grid.style.backgroundPosition = `${tx + ORIGIN.x * zoom - (TILE_W * zoom) / 2}px ${ty + ORIGIN.y * zoom - (TILE_H * zoom) / 2}px`;
   }
-  if (lastFrame) drawOverlay(lastFrame); // the data card is scaled by 1 / zoom
 }
 
 function measure(): boolean {
@@ -138,7 +139,7 @@ function cumulative(segs: Seg[]): number[] {
   return cum;
 }
 
-// Flow dots ride the lanes: the forward lanes of every hop, and with `both` the back lanes in
+// Flow tokens (tiny packets) ride the lanes: the forward lanes of every hop, and with `both` the back lanes in
 // reverse hop order.
 function flowDots(stepId: string, color: string, both: boolean, progress: number): string {
   const step = stepById.get(stepId);
@@ -151,7 +152,7 @@ function flowDots(stepId: string, color: string, both: boolean, progress: number
   const offset = ((progress * FLOW_MS) / 1000) * FLOW_SPEED;
   const start = offset % FLOW_SPACING;
   const dot = (p: { x: number; y: number }) =>
-    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="${color}" fill-opacity="0.9"/>`;
+    `<rect x="${(p.x - 7).toFixed(1)}" y="${(p.y - 4.5).toFixed(1)}" width="14" height="9" rx="2" fill="${color}" fill-opacity="0.9"/>`;
   let out = "";
   for (let d = start; d <= total; d += FLOW_SPACING) {
     out += dot(pointOnSegs(fwd, cf, d));
@@ -160,39 +161,42 @@ function flowDots(stepId: string, color: string, both: boolean, progress: number
   return out;
 }
 
-function cardMarkup(x: number, y: number, color: string, data: Record<string, unknown>): string {
-  const lines = Object.entries(data).map(([k, v]) => {
-    const text = typeof v === "string" ? v : JSON.stringify(v);
-    const line = `${k}: ${text}`;
-    return line.length > 44 ? line.slice(0, 43) + "..." : line;
-  });
-  if (lines.length === 0) return "";
-  const w = Math.max(...lines.map((l) => l.length)) * 7.4 + 18;
-  const h = lines.length * 18 + 12;
-  // Work in stage pixels so the card keeps its size and stays on screen at any zoom, then map the
-  // corner back into canvas units and scale the card by 1 / zoom.
-  const px = tx + x * zoom;
-  const py = ty + y * zoom;
-  let cx = px + 16;
-  let cy = py - h - 12;
-  if (cx + w > sw - 4) cx = px - w - 16;
-  cx = Math.max(4, Math.min(cx, sw - w - 4));
-  cy = Math.max(4, Math.min(cy, sh - h - 4));
-  const text = lines
-    .map((l, i) => `<text class="card-tx" x="9" y="${22 + i * 18}">${esc(l)}</text>`)
-    .join("");
-  return (
-    `<g transform="translate(${((cx - tx) / zoom).toFixed(2)} ${((cy - ty) / zoom).toFixed(2)}) scale(${(1 / zoom).toFixed(4)})">` +
-    `<rect class="card-bg" width="${w.toFixed(1)}" height="${h}" rx="8" stroke="${color}"/>` +
-    text +
-    `</g>`
-  );
+const PK_FONT = 12; // world px
+const PK_CHAR = 7.3; // monospace glyph width at PK_FONT
+const PK_HEAD = 20;
+const PK_ROW = 16;
+
+/** White or near-black, whichever reads better on the track colour. */
+function onColor(hex: string): string {
+  const h = hex.length === 4 ? "#" + [...hex.slice(1)].map((c) => c + c).join("") : hex;
+  const n = parseInt(h.slice(1), 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.6 ? "#0f172a" : "#ffffff";
 }
 
-let lastFrame: Frame | null = null;
+// A packet is an upright rounded rectangle centred on its lane point: a header strip with the step
+// label in the track colour, and below it one row per piece of data it carries.
+function packetMarkup(x: number, y: number, color: string, label: string, data: Record<string, unknown>): string {
+  const title = packetTitle(label);
+  const rows = packetRows(data);
+  const longest = Math.max(title.length, ...rows.map((r) => r.length), 8);
+  const w = Math.round(longest * PK_CHAR + 16);
+  const h = PK_HEAD + (rows.length > 0 ? rows.length * PK_ROW + 8 : 0);
+  const x0 = (x - w / 2).toFixed(1);
+  const y0 = (y - h / 2).toFixed(1);
+  const id = `pk${nextClip++}`;
+  let out = `<clipPath id="${id}"><rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6"/></clipPath>`;
+  out += `<rect class="pk-bg" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6" stroke="${color}"/>`;
+  out += `<g clip-path="url(#${id})"><rect x="${x0}" y="${y0}" width="${w}" height="${PK_HEAD}" fill="${color}"/></g>`;
+  out += `<text class="pk-tx" font-size="${PK_FONT}" font-weight="700" fill="${onColor(color)}" x="${(x - w / 2 + 8).toFixed(1)}" y="${(y - h / 2 + 14).toFixed(1)}">${esc(title)}</text>`;
+  rows.forEach((r, i) => {
+    out += `<text class="pk-tx pk-row" font-size="${PK_FONT}" x="${(x - w / 2 + 8).toFixed(1)}" y="${(y - h / 2 + PK_HEAD + 6 + PK_ROW * (i + 0.75)).toFixed(1)}">${esc(r)}</text>`;
+  });
+  return out;
+}
+let nextClip = 0;
 
 function drawOverlay(f: Frame): void {
-  lastFrame = f;
   let out = "";
   for (const p of f.pulses) {
     const pos = nodePos.get(p.node);
@@ -202,9 +206,8 @@ function drawOverlay(f: Frame): void {
   }
   for (const fl of f.flows) out += flowDots(fl.stepId, fl.color, fl.both, fl.progress);
   for (const p of f.packets) {
-    out += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9" fill="${p.color}" stroke="#fff" stroke-width="2"/>`;
+    out += packetMarkup(p.x, p.y, p.color, p.label, p.data);
   }
-  if (f.card) out += cardMarkup(f.card.x, f.card.y, f.card.color, f.card.data);
   overlay.innerHTML = out;
 }
 
@@ -301,9 +304,11 @@ function reducedFrame(c: number): Frame {
       stepDesc: s?.desc ?? "",
       note: last?.note ?? "",
     },
-    packets: [],
+    packets:
+      s && last
+        ? [{ stepId: s.id, x: last.x2, y: last.y2, color: s.color, direction: 1, label: s.label, data: last.data }]
+        : [],
     flows: [],
-    card: s && last ? { stepId: s.id, x: last.x2, y: last.y2, color: s.color, data: last.data } : null,
     pulses: s && last ? [{ node: last.to, color: s.color, ageMs: 0 }] : [],
   };
 }

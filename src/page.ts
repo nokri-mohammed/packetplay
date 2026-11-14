@@ -31,8 +31,8 @@ h1{font-size:1.4rem;margin:0 0 12px}
 .zoombar{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:default}
 .zoombar button{min-height:36px;min-width:36px;padding:0 10px}
 #zoom-label{min-width:3.2em;text-align:center;font-size:.9rem;color:var(--muted)}
-.card-bg{fill:var(--card-bg);stroke-width:2}
-.card-tx{fill:var(--fg);font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+.pk-bg{fill:var(--card-bg);stroke-width:1.5}
+.pk-tx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.pk-row{fill:var(--fg)}
 .caption{margin:12px 0;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:7.5em}
 .caption h2{font-size:1rem;margin:0;color:var(--muted);font-weight:600}
 .caption .step{font-size:1.15rem;font-weight:700;margin:4px 0 0}

@@ -123,6 +123,7 @@ describe("timing with node dwell", () => {
     const final = frameAt(tl, 7000);
     expect(final.stepId).toBe(st.id);
     expect([final.packets[0]!.x, final.packets[0]!.y]).toEqual([last.x2, last.y2]);
-    expect(final.card).not.toBeNull();
+    expect(final.packets[0]!.label).toBe(st.label);
+    expect(final.packets[0]!.data).toEqual(last.data);
   });
 });

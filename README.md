@@ -6,11 +6,16 @@ Animate packets and messages across SVG diagrams from a YAML or JSON scene file.
 
 You describe nodes, links, tracks and chapters of steps in a structured file. A build turns it into
 one self-contained HTML page where messages travel hop by hop along the links, with captions, data
-cards, pause, step, speed and a clickable timeline.
+packets, pause, step, speed and a clickable timeline.
 
 The diagram sits on an isometric 3D grid that zooms with the mouse wheel (or pinch) and pans with a
 drag. Node `at: [i, j]` positions are isometric tile coordinates, and every link is drawn as two
 arrows side by side, one per direction, so a reply travels on the other arrow.
+
+Each moving message is a small packet: a header in the track colour with the step label, and rows
+below it with the data it carries (`key: value`, at most four rows, then `+N more`). When a node
+rewrites the data (for example NAT changing the source address), the rows on the packet change at
+the next hop. Flow steps show streams of tiny packets, in both directions with `both: true`.
 
 ## Example
 
@@ -33,13 +38,18 @@ chapters:
       - { from: client, to: sig, track: signal, label: join room 42 }
 ```
 
-The full scene is in [examples/webrtc.scene.yaml](examples/webrtc.scene.yaml) (and as JSON).
+Two examples ship, each as YAML and as JSON:
+
+- [examples/webrtc.scene.yaml](examples/webrtc.scene.yaml): how a WebRTC call connects.
+- [examples/udp.scene.yaml](examples/udp.scene.yaml): how a UDP message travels (NAT rewriting the
+  address, then a stream of datagrams).
 
 ## CLI
 
 ```
 bun install
 bun run build:example          # writes dist/webrtc.html, open it in a browser
+bun run build:examples         # writes dist/webrtc.html and dist/udp.html
 bun run src/cli.ts build <file> -o <out.html>
 bun run src/cli.ts convert <file> --to json|yaml
 ```

@@ -118,9 +118,36 @@ CEO asked for both on 2026-11-14 and said "go until everything is done".
 
 ## Report
 
-<The agent fills this in when finished. Start with `Status: done` (or `blocked`), then:>
+Status: done
 
 - **Did:**
+  - `src/player-core.ts`: new exported `packetRows(data, maxRows = 4, maxChars = 26)` and `packetTitle(label)` (22 chars). `PacketPos` now carries `label` and `data`; the `Card` type and `Frame.card` are gone. The reply packet of a `both` step has `data: {}` (header only).
+  - `src/player.ts`: packets are upright rounded rectangles drawn inside `g.scene`, centred on the lane point. Header strip in the track colour with the label (white or near-black text by luminance), body rows `key: value`, thin border in the track colour. Flow tokens are 14 x 9 world px rounded rectangles, no text, both lanes with `both`. Reduced motion shows one static packet with data at the step's destination. The floating card code is removed (pulses, lanes, caption note, zoom and pan unchanged).
+  - `src/page.ts`: page CSS `.card-bg` and `.card-tx` replaced by `.pk-bg`, `.pk-tx`, `.pk-row` (CSS stays in the HTML page, none inside the SVG).
+  - `examples/udp.scene.yaml` and `examples/udp.scene.json` (JSON made with the CLI `convert`, same model).
+  - `package.json`: `build:examples` builds `dist/webrtc.html` and `dist/udp.html`; `build:example` kept. README: packet paragraph, both examples, commands.
+  - Tests: new `test/packet-rows.test.ts` (9 tests: empty, 2 rows, exactly 4, 6 keys giving `+2 more`, truncation to 26, exact 26 kept, objects, custom limits, title cut). `test/build.test.ts`: 3 UDP tests (same model YAML vs JSON, validates; 3 chapters and exact totalMs; NAT rewrites `src` on hop 2). Changed `test/timeline-lanes.test.ts`: the `expect(final.card).not.toBeNull()` line now asserts the packet's `label` and `data` (the card no longer exists). No snapshot needed changes.
+  - Font size: world font 12 px (spec said about 11), glyph width 7.3 px, chosen up front for readability at Fit; not checked in a browser.
+- **UDP totalMs by hand (rules in `src/timeline.ts`):** hop time = HOP_MS 1600 + NODE_DWELL_MS 900 = 2500. Chapter 1: 3 hops (laptop, router, net, dns) = 7500, so 0 to 7500; then STEP_GAP 600, cursor 8100. Chapter 2: 3 hops = 7500, 8100 to 15600; gap 600, cursor 16200. Chapter 3: flow lasts FLOW_MS 6000, 16200 to 22200. totalMs = max endMs = 22200. The test asserts exactly this.
 - **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+  - `bun test`: 170 pass, 0 fail (158 before), 1078 expect() calls.
+  - `bun run typecheck`: `tsc --noEmit` clean.
+  - `bun run build:examples`: `Wrote dist/webrtc.html (78361 bytes)`, `Wrote dist/udp.html (65099 bytes)`.
+  - `./scripts/check-public.sh --all`: exit 0.
+  - `http` strings in both built pages: only `http://www.w3.org/2000/svg`.
+  - No em dashes in changed files; no absolute local paths written.
+- **Left / needs a decision:** Nothing visual was checked in a browser (CEO tests by hand). Schema description text still says "data card" (schema untouched per scope). Nothing committed.
+- **Lessons:** Write test expectations for truncation by counting characters in code, not by eye (two of my own expectations were off by one). Ticket row rule is ambiguous: I read "6 keys giving `+2 more`" as 4 key rows plus a `+2 more` row (5 lines).
+
+### Browser checklist for the CEO
+
+1. Open `dist/webrtc.html` and press Play: the moving dot is now a small packet with a coloured header showing the step label.
+2. Check the rows under the header (for example `room: 42`) are readable at the Fit zoom; if too small, tell the manager to raise the font size.
+3. In the UDP page, chapter 1: the packet shows proto, src, dst, payload; after it passes the router the `src` row changes to `203.0.113.7:61000`.
+4. UDP chapter 2: the reply packet shows `dst: 203.0.113.7:61000` and after the router it becomes `192.0.2.20:49152`.
+5. The rows stay on the packet while it rests at each node (the data of the hop it just finished).
+6. UDP chapter 3: tiny orange packets stream along both lanes (laptop to dns and back).
+7. Any step with `both: true` in packet mode: the return packet has a header only.
+8. Zoom and pan: packets scale and move with the scene; no floating card remains; captions and pulses behave as before.
+9. Both examples in light and dark mode: text and borders stay readable.
+10. Reduced motion (OS setting or devtools emulation): each step shows a static packet with its data at the destination, nothing travels.

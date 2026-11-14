@@ -16,6 +16,9 @@ export interface PacketPos {
   y: number;
   color: string;
   direction: 1 | -1;
+  label: string;
+  /** What the packet carries at this hop. Empty for the reply packet of a `both` step. */
+  data: Record<string, unknown>;
 }
 export interface FlowState {
   stepId: string;
@@ -23,13 +26,6 @@ export interface FlowState {
   color: string;
   both: boolean;
   progress: number;
-}
-export interface Card {
-  stepId: string;
-  x: number;
-  y: number;
-  color: string;
-  data: Record<string, unknown>;
 }
 export interface Pulse {
   node: string;
@@ -42,7 +38,6 @@ export interface Frame {
   caption: Caption;
   packets: PacketPos[];
   flows: FlowState[];
-  card: Card | null;
   pulses: Pulse[];
 }
 
@@ -71,6 +66,25 @@ function hopAt(step: StepTL, t: number): { index: number; hop: HopTL; f: number 
   return { index: found, hop, f };
 }
 
+const clip = (text: string, max: number): string => (text.length > max ? text.slice(0, max - 1) + "\u2026" : text);
+
+/** Header text of a packet: the step label, cut to 22 characters. */
+export const packetTitle = (label: string): string => clip(label, 22);
+
+/**
+ * Body rows of a packet: one `key: value` row per key in insertion order, each cut to `maxChars`.
+ * With more than `maxRows` keys the first `maxRows` are shown and a last row says `+N more`.
+ */
+export function packetRows(data: Record<string, unknown>, maxRows = 4, maxChars = 26): string[] {
+  const entries = Object.entries(data);
+  const rows = entries.slice(0, maxRows).map(([k, v]) => {
+    const text = typeof v === "object" && v !== null ? JSON.stringify(v) : String(v);
+    return clip(`${k}: ${text}`, maxChars);
+  });
+  if (entries.length > maxRows) rows.push(`+${entries.length - maxRows} more`);
+  return rows;
+}
+
 /** Everything that is visible at time t. */
 export function frameAt(tl: Timeline, tMs: number): Frame {
   const t = tMs;
@@ -92,7 +106,6 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
 
   const packets: PacketPos[] = [];
   const flows: FlowState[] = [];
-  let card: Card | null = null;
 
   for (const s of tl.steps) {
     if (!(s.startMs <= t && t < s.endMs)) continue;
@@ -111,7 +124,7 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
     const { index, hop, f } = at;
     const x = lerp(hop.x1, hop.x2, f);
     const y = lerp(hop.y1, hop.y2, f);
-    packets.push({ stepId: s.id, x, y, color: s.color, direction: 1 });
+    packets.push({ stepId: s.id, x, y, color: s.color, direction: 1, label: s.label, data: hop.data });
     if (s.both) {
       const rev = s.hops[s.hops.length - 1 - index] as HopTL;
       packets.push({
@@ -120,9 +133,10 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
         y: lerp(rev.back.y1, rev.back.y2, f),
         color: s.color,
         direction: -1,
+        label: s.label,
+        data: {},
       });
     }
-    if (cur && cur.id === s.id) card = { stepId: s.id, x, y, color: s.color, data: hop.data };
   }
 
   const pulses: Pulse[] = [];
@@ -134,7 +148,7 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
     }
   }
 
-  return { chapter: chapterIndex, stepId: cur ? cur.id : null, caption, packets, flows, card, pulses };
+  return { chapter: chapterIndex, stepId: cur ? cur.id : null, caption, packets, flows, pulses };
 }
 
 export type Jump = "hop" | "message" | "chapter";

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadScene } from "../src/load.ts";
 import { buildHtml } from "../src/page.ts";
+import { validateScene } from "../src/validate.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const yamlPath = root + "examples/webrtc.scene.yaml";
@@ -78,5 +79,51 @@ describe("cli convert", () => {
 
   test("unknown command exits 2", async () => {
     expect((await run(["nope"])).code).toBe(2);
+  });
+});
+
+describe("udp example", () => {
+  const udpYaml = root + "examples/udp.scene.yaml";
+  const udpJson = root + "examples/udp.scene.json";
+
+  test("YAML and JSON give the same model and it validates", async () => {
+    const y = (await loadScene(udpYaml)) as unknown as Record<string, unknown>;
+    const j = (await loadScene(udpJson)) as unknown as Record<string, unknown>;
+    delete y.$schema;
+    delete j.$schema;
+    expect(y).toEqual(j);
+    expect(validateScene(y)).toEqual([]);
+  });
+
+  test("builds a page with 3 chapters and the hand-calculated totalMs", async () => {
+    const scene = await loadScene(udpYaml);
+    const html = await buildHtml(scene);
+    expect(html).toContain("<title>How a UDP message travels</title>");
+    const m = html.match(/<script type="application\/json" id="timeline-data">([\s\S]*?)<\/script>/);
+    const timeline = JSON.parse(m?.[1] ?? "{}");
+    expect(timeline.chapters.length).toBe(3);
+    // Chapter 1: 3 hops * (1600 + 900) = 7500, gap 600. Chapter 2 starts at 8100, ends 15600, gap 600.
+    // Chapter 3 (flow) starts at 16200 and lasts 6000, so the end is 22200.
+    expect(timeline.chapters.map((c: { startMs: number; endMs: number }) => [c.startMs, c.endMs])).toEqual([
+      [0, 7500],
+      [8100, 15600],
+      [16200, 22200],
+    ]);
+    expect(timeline.totalMs).toBe(22200);
+    const urls = html.match(/https?:\/\/[^"'\s)<>]+/g) ?? [];
+    expect([...new Set(urls)]).toEqual(["http://www.w3.org/2000/svg"]);
+  });
+
+  test("the NAT step changes the data on the packet at the router hop", async () => {
+    const scene = await loadScene(udpYaml);
+    const { compileTimeline } = await import("../src/timeline.ts");
+    const { layoutScene } = await import("../src/layout.ts");
+    const tl = compileTimeline(scene, layoutScene(scene));
+    const hops = tl.steps[0]!.hops;
+    expect(hops.map((h) => (h.data as Record<string, string>).src)).toEqual([
+      "192.0.2.20:49152",
+      "203.0.113.7:61000",
+      "203.0.113.7:61000",
+    ]);
   });
 });
