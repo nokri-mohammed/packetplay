@@ -1,8 +1,8 @@
 # T-20261114-24: Slightly faster 1x, a noticeable reveal, and a typing animation before sending
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (clear spec; constants, one optional schema field, player drawing, one example edit)
 - **Status:** done
 

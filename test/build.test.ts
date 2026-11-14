@@ -65,7 +65,7 @@ describe("cli convert", () => {
   });
 
   test("JSON to YAML to JSON round trips", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "svg-scenes-"));
+    const dir = mkdtempSync(join(tmpdir(), "packetplay-"));
     try {
       const y = join(dir, "a.yaml");
       expect((await run(["convert", jsonPath, "--to", "yaml", "-o", y])).code).toBe(0);

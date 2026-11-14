@@ -1,8 +1,8 @@
 # T-20261114-3: Implement loader and validator (M1)
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (clear spec and tests, no design decisions)
 - **Status:** open (starts after T-20261114-2 is done)
 

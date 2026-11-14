@@ -8,9 +8,9 @@ import { validateScene } from "./validate.ts";
 import type { Scene } from "./types.generated.ts";
 
 const USAGE = `Usage:
-  svg-scenes build <file> [-o <out.html>]
-  svg-scenes convert <file> --to json|yaml [-o <out>]
-  svg-scenes --help
+  packetplay build <file> [-o <out.html>]
+  packetplay convert <file> --to json|yaml [-o <out>]
+  packetplay --help
 
 build    Turn a scene file (.yaml, .yml or .json) into one self-contained HTML page.
 convert  Write the same scene as JSON or YAML (stdout when no -o is given).

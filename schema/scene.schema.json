@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/nokri-mohammed/svg-scenes/main/schema/scene.schema.json",
+  "$id": "https://raw.githubusercontent.com/nokri-mohammed/packetplay/main/schema/scene.schema.json",
   "$comment": "This is schema version 1. A breaking change will add schema/v2/ while v1 stays.",
   "title": "Scene",
-  "description": "An svg-scenes scene: nodes, links, tracks and chapters of steps. The same model is used for YAML and JSON files.",
+  "description": "An packetplay scene: nodes, links, tracks and chapters of steps. The same model is used for YAML and JSON files.",
   "type": "object",
   "additionalProperties": false,
   "required": [

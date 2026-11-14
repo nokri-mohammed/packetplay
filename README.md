@@ -1,4 +1,4 @@
-# svg-scenes
+# packetplay
 
 Animate packets and messages across SVG diagrams from a YAML or JSON scene file.
 
@@ -61,7 +61,7 @@ bun run src/cli.ts convert <file> --to json|yaml
 ```
 
 Built with Bun and TypeScript on top of [anime.js](https://animejs.com). See the
-[design plan](docs/plans/2026-11-14-svg-scenes.md).
+[design plan](docs/plans/2026-11-14-packetplay.md).
 
 ## Versioning
 
@@ -73,7 +73,7 @@ field) do not bump the version. A breaking change bumps it and adds a new schema
 A scene with a newer version than the tool understands fails to load with:
 
 ```
-scene version 2 is not supported: this svg-scenes understands version 1 and older (update svg-scenes)
+scene version 2 is not supported: this packetplay understands version 1 and older (update packetplay)
 ```
 
 ## License

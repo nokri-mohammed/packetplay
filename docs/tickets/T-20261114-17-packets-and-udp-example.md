@@ -1,8 +1,8 @@
 # T-20261114-17: Little packets that show what they carry, and a UDP example
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (clear spec, player drawing code plus two example files)
 - **Status:** open
 

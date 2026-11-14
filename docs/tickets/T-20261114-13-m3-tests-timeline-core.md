@@ -1,8 +1,8 @@
 # T-20261114-13: M3 tests first: timeline compiler and player core
 
 - **Owner:** tdd-guide (not installed in this session, so a sonnet general-purpose agent acts as it)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (writing tests from a written spec)
 - **Status:** cancelled on 2026-11-14 (CEO: "I want to test it, do not spend tokens on a tester").
   The API and rules below are kept as the design spec for T-20261114-14.
@@ -15,7 +15,7 @@ how navigation, speed and keys behave). No browser is needed for these.
 
 ## Context
 
-- Plan: `docs/plans/2026-11-14-svg-scenes.md` ("Pipeline" step 5, "Player", "Validation" M3). M1
+- Plan: `docs/plans/2026-11-14-packetplay.md` ("Pipeline" step 5, "Player", "Validation" M3). M1
   and M2 are done (`loadScene`, `validateScene`, `routeStep`, `layoutScene`, `renderSvg`).
 - Read `docs/LESSONS.md` first. Three rules from it: assert exact values; run `bun run typecheck`
   on your tests before handing over (strict index access: use a `need()` helper or `!`); check any

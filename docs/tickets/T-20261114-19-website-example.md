@@ -1,8 +1,8 @@
 # T-20261114-19: Example: how a browser loads a website (DNS, handshake, request)
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (two data files in an existing format, plus a few small tests)
 - **Status:** open (starts after T-20261114-18 is done: both touch `package.json`, the README and `test/build.test.ts`)
 

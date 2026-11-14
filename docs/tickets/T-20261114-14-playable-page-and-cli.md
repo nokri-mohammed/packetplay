@@ -1,8 +1,8 @@
 # T-20261114-14: Playable page and CLI (M3 and M4 together)
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (spec is written; the CEO asked to keep token use low)
 - **Status:** open
 
@@ -22,7 +22,7 @@ HTML file that the CEO opens in a browser to watch and control the animated WebR
 - Already built (M1, M2; do not change behaviour): `loadScene`, `validateScene`, `routeStep`,
   `layoutScene`, `renderSvg` (static SVG with `data-node`, `data-link`, `data-group` attributes; it
   must stay free of `<style>`), `prefixIds`, `bun run render:example`. Read `docs/LESSONS.md`.
-- Plan: `docs/plans/2026-11-14-svg-scenes.md` ("Player", "CLI").
+- Plan: `docs/plans/2026-11-14-packetplay.md` ("Player", "CLI").
 - Dependencies approved by the manager for this ticket: runtime `animejs` 4.5.0 (exact version, MIT).
   Nothing else. No Playwright, no test libraries.
 
@@ -65,12 +65,12 @@ Do, in this order, running `bun test` and `bun run typecheck` after each step:
    `<!--`), and the bundle in one inline `<script>`. Light and dark follow `prefers-color-scheme`.
    Responsive: works at phone width (16 px gutter, no horizontal page scroll; the SVG scales with its
    viewBox). Page title is the scene title. No external requests of any kind.
-6. `src/cli.ts` and `package.json` (`"bin": { "svg-scenes": "src/cli.ts" }`, shebang
+6. `src/cli.ts` and `package.json` (`"bin": { "packetplay": "src/cli.ts" }`, shebang
    `#!/usr/bin/env bun`, scripts `build:example` and `cli`):
-   - `svg-scenes build <file> -o <out.html>`: load, validate (print every issue as
+   - `packetplay build <file> -o <out.html>`: load, validate (print every issue as
      `file: message`, exit 1 if any), build, write. Default output `<file basename>.html` next to the
      input. Print the output path and size.
-   - `svg-scenes convert <file> --to json|yaml [-o <out>]`: load, validate, write the converted
+   - `packetplay convert <file> --to json|yaml [-o <out>]`: load, validate, write the converted
      scene (stdout when no `-o`). YAML to JSON to YAML keeps the same model. Keep the yaml-language-
      server schema comment out of JSON; add it back for YAML output only if the source had `$schema`.
    - Unknown command or missing args: a short usage text, exit 2. `--help` works.

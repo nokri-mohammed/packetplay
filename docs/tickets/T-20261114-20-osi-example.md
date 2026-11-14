@@ -1,8 +1,8 @@
 # T-20261114-20: Example: the OSI model, how a file becomes bits
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (two data files in an existing format, a few small tests)
 - **Status:** done, awaiting CEO commit approval
 

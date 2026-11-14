@@ -1,8 +1,8 @@
 # T-20261114-18: Packet info box must not cover the icons (balloon layout)
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (small drawing change in the player plus one pure helper)
 - **Status:** open
 

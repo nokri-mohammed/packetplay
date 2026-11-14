@@ -1,8 +1,8 @@
 # T-20261114-15: Isometric grid background and two-lane links (rework of M2, M3)
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (spec below is exact; CEO wants low token use and tests the result by hand)
 - **Status:** done
 
@@ -16,7 +16,7 @@ direction.
 ## Context
 
 - CEO approved both changes on 2026-11-14. Read the plan section "Design changes requested by the
-  CEO" in `docs/plans/2026-11-14-svg-scenes.md`, and `docs/LESSONS.md`.
+  CEO" in `docs/plans/2026-11-14-packetplay.md`, and `docs/LESSONS.md`.
 - Reference page to copy the grid, zoom and pan approach from (read it, do not edit it):
   `learning-notes/notes/networking/file-journey.html` (a sibling project under `homelab-team-all/projects/`; the manager gives you the full path in the task prompt, never write it into a repo file)
   (tile `141.5 x 81.9`, `MIN_ZOOM 0.2`, `MAX_ZOOM 1.6`, background image is an SVG data URI tile,

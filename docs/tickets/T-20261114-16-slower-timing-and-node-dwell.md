@@ -1,8 +1,8 @@
 # T-20261114-16: Slower default speed and a pause at every node
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (two constants and one timing rule, small)
 - **Status:** open (starts after T-20261114-15 is done, because both edit the timeline and player core)
 

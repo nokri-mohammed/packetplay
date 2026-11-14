@@ -1,4 +1,4 @@
-# svg-scenes: project rules
+# packetplay: project rules
 
 - This repo is PUBLIC. Never commit private details: addresses, hostnames, usernames, emails,
   tokens, or anything from the CEO's private setup. Use documentation examples (`192.0.2.20`,
@@ -12,7 +12,7 @@
 - Test-first: tdd-guide writes the tests, then the implementation, then code-reviewer checks the diff.
 - Tickets live in `docs/tickets/` (from `homelab-team-all/docs/tickets/TEMPLATE.md`). Plans live in
   `docs/plans/`. The team diagram is `docs/TEAM.md`.
-- `svg-scenes-manager` coordinates all work and is the CEO's contact. Plans, releases, npm
+- `packetplay-manager` coordinates all work and is the CEO's contact. Plans, releases, npm
   publishing and deletes need the CEO's approval.
 - Only the isoflow icons are vendored (MIT). Do not add other icon packs.
 - The team-wide rules in `homelab-team-all/CLAUDE.md` apply.

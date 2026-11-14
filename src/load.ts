@@ -17,7 +17,7 @@ export function parseScene(text: string, format: SceneFormat): Scene {
   const version = (value as { version?: unknown }).version;
   if (typeof version === "number" && Number.isInteger(version) && version > SCHEMA_VERSION) {
     throw new SceneVersionError(
-      `scene version ${version} is not supported: this svg-scenes understands version ${SCHEMA_VERSION} and older (update svg-scenes)`,
+      `scene version ${version} is not supported: this packetplay understands version ${SCHEMA_VERSION} and older (update packetplay)`,
     );
   }
   return value as Scene;

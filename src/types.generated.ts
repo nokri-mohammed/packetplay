@@ -13,7 +13,7 @@ export type Link = [string, string];
 export type StepOrParallel = Step | Parallel;
 
 /**
- * An svg-scenes scene: nodes, links, tracks and chapters of steps. The same model is used for YAML and JSON files.
+ * An packetplay scene: nodes, links, tracks and chapters of steps. The same model is used for YAML and JSON files.
  */
 export interface Scene {
   /**

@@ -1,8 +1,8 @@
 # T-20261114-1: Toolchain, JSON Schema and generated types (M1)
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (small, well specified setup work, no design decisions)
 - **Status:** open
 
@@ -13,7 +13,7 @@ single source of truth for the scene format, with TypeScript types generated fro
 
 ## Context
 
-- Plan: `docs/plans/2026-11-14-svg-scenes.md` (approved by the CEO on 2026-11-14). Read "Scene format".
+- Plan: `docs/plans/2026-11-14-packetplay.md` (approved by the CEO on 2026-11-14). Read "Scene format".
 - Example scenes that MUST validate against the schema: `examples/webrtc.scene.yaml` and
   `examples/webrtc.scene.json`. The yaml file's first line already points at
   `../schema/scene.schema.json`.
@@ -34,7 +34,7 @@ single source of truth for the scene format, with TypeScript types generated fro
 
 ## Scope
 
-- Do: `package.json` (name `svg-scenes`, MIT, type module, scripts: `test`, `typecheck`, `gen:types`),
+- Do: `package.json` (name `packetplay`, MIT, type module, scripts: `test`, `typecheck`, `gen:types`),
   `tsconfig.json` (strict), `schema/scene.schema.json` (draft 2020-12, `additionalProperties: false`
   everywhere, helpful `description` on each field), the type generator script, a minimal
   `src/index.ts` that re-exports the types, and ONE test `test/schema.test.ts` proving both example

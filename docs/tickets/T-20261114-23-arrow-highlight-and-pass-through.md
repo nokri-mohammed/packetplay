@@ -1,8 +1,8 @@
 # T-20261114-23: Colour and animate the arrow itself; packets pass through node icons
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (player drawing change plus hop endpoints, clear spec)
 - **Status:** done
 

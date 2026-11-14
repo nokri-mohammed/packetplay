@@ -1,8 +1,8 @@
 # T-20261114-28: Compact playback controls in the Plush UI look
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (page CSS and markup, small player wiring)
 - **Status:** done
 

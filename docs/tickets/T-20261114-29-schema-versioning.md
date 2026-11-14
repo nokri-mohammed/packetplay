@@ -1,8 +1,8 @@
 # T-20261114-29: Version the scene schema
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (one optional schema field, a loader check, exact tests, docs)
 - **Status:** done
 
@@ -16,28 +16,28 @@ fails with a clear message for a newer one, and the schema has a real, stable id
 - CEO request, 2026-11-14: asked "is the schema versioned?" (answer: no) and then "yes do that" to the
   manager's recommendation: an optional `version: 1` in scenes, a loader check with a clear error for
   unknown versions, and a versioned identity for the schema.
-- Today: `schema/scene.schema.json` has `$id` `https://example.com/svg-scenes/scene.schema.json` (a
+- Today: `schema/scene.schema.json` has `$id` `https://example.com/packetplay/scene.schema.json` (a
   placeholder), no version field; `package.json` is `0.0.0`; `$schema` in a scene is accepted and
   ignored; every schema change so far was optional and additive (`grid`, `at`, `group`, `hidden`,
   `reveal`, `typing`).
 - Read `docs/LESSONS.md`, `schema/scene.schema.json`, `src/load.ts`, `src/validate.ts`,
   `test/schema.test.ts`, `test/load.test.ts`, `README.md`. CEO rules: no tester or browser automation.
   PUBLIC repo: no absolute local paths or usernames, no private values; the repository URL
-  `github.com/nokri-mohammed/svg-scenes` is public and fine. No em dashes. No new dependencies.
+  `github.com/nokri-mohammed/packetplay` is public and fine. No em dashes. No new dependencies.
   Do NOT move or rename `schema/scene.schema.json` (editors, tests and `gen:types` point at it).
 
 ## Spec
 
 - Schema: add optional top-level `version` (`type: integer`, `minimum: 1`, description: "Schema version
   this scene is written for. Missing means 1."). Set `$id` to the real public raw URL of the file:
-  `https://raw.githubusercontent.com/nokri-mohammed/svg-scenes/main/schema/scene.schema.json`. Add a
+  `https://raw.githubusercontent.com/nokri-mohammed/packetplay/main/schema/scene.schema.json`. Add a
   `$comment` saying this is schema version 1 and that a breaking change will add `schema/v2/` while
   `v1` stays. Run `bun run gen:types` (the `Scene` type gets `version?: number`).
 - Code: export `SCHEMA_VERSION = 1` (one place, for example `src/version.ts`, re-exported from
   `src/index.ts` by appending only your own line). In the loader (`loadScene` and `parseScene`), after
   parsing and before schema validation, if `version` is an integer greater than `SCHEMA_VERSION`, throw
   an error in the existing style (it names the file, like the other load errors) with exactly:
-  `scene version N is not supported: this svg-scenes understands version 1 and older (update svg-scenes)`
+  `scene version N is not supported: this packetplay understands version 1 and older (update packetplay)`
   with `N` the number found. A missing version is treated as 1 and the loaded model is NOT changed (do
   not insert a `version` key). `version` of 0, a negative, a fraction or a non-number is reported by the
   normal schema validation (no special code).
@@ -102,7 +102,7 @@ Real output:
 - `bun run build:examples`: webrtc.html 87733 bytes, udp.html 73815, website.html 108583, osi.html 78287, homenet.html 110844.
 - `./scripts/check-public.sh --all`: exit 0.
 - CLI on a scene with `version: 2` (`bun run src/cli.ts build future.scene.yaml -o o.html`), exit code 1:
-  `future.scene.yaml: scene version 2 is not supported: this svg-scenes understands version 1 and older (update svg-scenes)`
+  `future.scene.yaml: scene version 2 is not supported: this packetplay understands version 1 and older (update packetplay)`
 
 Left: nothing. Awaiting the manager's review and the CEO's commit approval.
 

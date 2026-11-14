@@ -1,8 +1,8 @@
 # T-20261114-6: Fix the M1 review findings
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (small, guided refactor with an existing test net)
 - **Status:** open
 

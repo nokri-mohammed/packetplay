@@ -14,7 +14,7 @@ const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema)
 const base = parse(read("examples/webrtc.scene.yaml"));
 const withVersion = (v: unknown) => ({ ...structuredClone(base), version: v });
 const MSG2 =
-  "scene version 2 is not supported: this svg-scenes understands version 1 and older (update svg-scenes)";
+  "scene version 2 is not supported: this packetplay understands version 1 and older (update packetplay)";
 
 describe("schema version", () => {
   test("SCHEMA_VERSION is 1", () => {
@@ -22,7 +22,7 @@ describe("schema version", () => {
   });
   test("$id is the public raw URL", () => {
     expect(schema.$id).toBe(
-      "https://raw.githubusercontent.com/nokri-mohammed/svg-scenes/main/schema/scene.schema.json",
+      "https://raw.githubusercontent.com/nokri-mohammed/packetplay/main/schema/scene.schema.json",
     );
   });
   test("schema accepts version 1 and 2", () => {

@@ -1,5 +1,5 @@
 {
-  "name": "svg-scenes",
+  "name": "packetplay",
   "version": "0.0.0",
   "description": "Describe a system in YAML or JSON, get one self-contained animated HTML page.",
   "license": "MIT",
@@ -25,6 +25,6 @@
     "typescript": "^7.0.2"
   },
   "bin": {
-    "svg-scenes": "src/cli.ts"
+    "packetplay": "src/cli.ts"
   }
 }

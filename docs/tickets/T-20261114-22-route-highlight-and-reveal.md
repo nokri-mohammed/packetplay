@@ -1,8 +1,8 @@
 # T-20261114-22: Highlight the full route of a step, and nodes that appear later
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (clear spec; touches schema, validator, timeline, player and one example)
 - **Status:** done
 

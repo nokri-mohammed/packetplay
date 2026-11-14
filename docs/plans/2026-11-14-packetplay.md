@@ -1,4 +1,4 @@
-# svg-scenes: design plan
+# packetplay: design plan
 
 **Status:** Approved by the CEO on 2026-11-14 (stack confirmed: TypeScript on Bun). M1 tickets are in
 `docs/tickets/` (T-20261114-1 to 5).
@@ -16,7 +16,7 @@ speed and a clickable timeline.
 - Structured files, not free text.
 - Support both YAML and JSON, with the same model and one JSON Schema.
 - Runtime: Bun 1.4 and TypeScript.
-- Public MIT repo `nokri-mohammed/svg-scenes`.
+- Public MIT repo `nokri-mohammed/packetplay`.
 
 ## Scene format
 
@@ -62,8 +62,8 @@ TypeScript types are generated from it. VS Code autocomplete comes from the
 ## CLI
 
 ```
-svg-scenes build <file> -o <out.html>
-svg-scenes convert <file> --to json|yaml
+packetplay build <file> -o <out.html>
+packetplay convert <file> --to json|yaml
 ```
 
 ## Milestones

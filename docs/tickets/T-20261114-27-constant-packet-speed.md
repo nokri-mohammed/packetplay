@@ -1,8 +1,8 @@
 # T-20261114-27: Packets move at the same speed on every arrow, whatever its length
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (timeline rule change plus exact test updates; careful arithmetic)
 - **Status:** done
 

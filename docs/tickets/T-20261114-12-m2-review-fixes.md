@@ -1,8 +1,8 @@
 # T-20261114-12: Fix the M2 review findings
 
 - **Owner:** general-purpose agent (implementer)
-- **Project:** projects/svg-scenes
-- **Opened by:** svg-scenes-manager, 2026-11-14
+- **Project:** projects/packetplay
+- **Opened by:** packetplay-manager, 2026-11-14
 - **Model:** sonnet (three small, guided fixes with a test net)
 - **Status:** done
 
