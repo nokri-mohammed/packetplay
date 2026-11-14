@@ -1,0 +1,236 @@
+{
+  "title": "The OSI model: from a file to bits",
+  "nodes": {
+    "app": {
+      "label": "7 Application",
+      "icon": "document",
+      "sub": "your file"
+    },
+    "pres": {
+      "label": "6 Presentation",
+      "icon": "lock",
+      "sub": "format, compress, encrypt"
+    },
+    "sess": {
+      "label": "5 Session",
+      "icon": "speech",
+      "sub": "open and keep a dialogue"
+    },
+    "trans": {
+      "label": "4 Transport",
+      "icon": "package-module",
+      "sub": "TCP or UDP, ports"
+    },
+    "net": {
+      "label": "3 Network",
+      "icon": "router",
+      "sub": "IP addresses"
+    },
+    "link": {
+      "label": "2 Data link",
+      "icon": "switch-module",
+      "sub": "MAC addresses, frames"
+    },
+    "phys": {
+      "label": "1 Physical",
+      "icon": "tower",
+      "sub": "bits on the wire"
+    }
+  },
+  "links": [
+    [
+      "app",
+      "pres"
+    ],
+    [
+      "pres",
+      "sess"
+    ],
+    [
+      "sess",
+      "trans"
+    ],
+    [
+      "trans",
+      "net"
+    ],
+    [
+      "net",
+      "link"
+    ],
+    [
+      "link",
+      "phys"
+    ]
+  ],
+  "tracks": {
+    "down": {
+      "label": "Sending: add a header",
+      "color": "blue"
+    },
+    "up": {
+      "label": "Receiving: remove a header",
+      "color": "green"
+    }
+  },
+  "chapters": [
+    {
+      "title": "1. Sender: from file to bits",
+      "steps": [
+        {
+          "from": "app",
+          "to": "pres",
+          "track": "down",
+          "label": "File to send",
+          "desc": "The OSI model is a teaching model with seven layers (real stacks use the four layers of TCP/IP). Your program hands a file to the top layer, and each layer below adds its own wrapper.",
+          "data": {
+            "file": "report.pdf",
+            "size": "2 MB",
+            "protocol": "HTTP upload"
+          }
+        },
+        {
+          "from": "pres",
+          "to": "sess",
+          "track": "down",
+          "label": "Format and encrypt",
+          "desc": "The presentation layer shrinks the file and scrambles it with TLS, so only the receiver can read it.",
+          "data": {
+            "compressed": "yes",
+            "encrypted": "TLS",
+            "size": "1.4 MB"
+          }
+        },
+        {
+          "from": "sess",
+          "to": "trans",
+          "track": "down",
+          "label": "Open a session",
+          "desc": "The session layer opens a conversation with the other computer and keeps track of it until it is finished.",
+          "data": {
+            "session": "42",
+            "state": "open",
+            "data": "1.4 MB"
+          }
+        },
+        {
+          "from": "trans",
+          "to": "net",
+          "track": "down",
+          "label": "Cut into segments",
+          "desc": "The transport layer cuts the data into small pieces called segments. Each one gets a port number so it reaches the right program.",
+          "data": {
+            "segment": "1 of 1000",
+            "src port": "50000",
+            "dst port": "443",
+            "header": "TCP"
+          }
+        },
+        {
+          "from": "net",
+          "to": "link",
+          "track": "down",
+          "label": "Add IP addresses",
+          "desc": "The network layer adds the sender and receiver addresses, so routers know where to send each packet.",
+          "data": {
+            "src": "192.0.2.20",
+            "dst": "198.51.100.80",
+            "header": "IP",
+            "unit": "packet"
+          }
+        },
+        {
+          "from": "link",
+          "to": "phys",
+          "track": "down",
+          "label": "Frame and bits",
+          "desc": "The data link layer wraps the packet in a frame for the next device on the network, then the physical layer turns it into bits.",
+          "data": {
+            "dst MAC": "next hop",
+            "unit": "frame",
+            "trailer": "checksum",
+            "then": "bits"
+          }
+        }
+      ]
+    },
+    {
+      "title": "2. Receiver: from bits to file",
+      "steps": [
+        {
+          "from": "phys",
+          "to": "link",
+          "track": "up",
+          "label": "Bits to frame",
+          "desc": "The bits crossed the cable (or the air) and arrive at the receiver. The data link layer checks the checksum and removes the frame.",
+          "data": {
+            "unit": "frame",
+            "trailer": "checksum ok",
+            "header": "MAC removed"
+          }
+        },
+        {
+          "from": "link",
+          "to": "net",
+          "track": "up",
+          "label": "Remove the frame",
+          "desc": "With the frame gone, a packet is left. The network layer checks that it is addressed to this computer.",
+          "data": {
+            "src": "192.0.2.20",
+            "dst": "198.51.100.80",
+            "header": "IP",
+            "unit": "packet"
+          }
+        },
+        {
+          "from": "net",
+          "to": "trans",
+          "track": "up",
+          "label": "Remove the IP header",
+          "desc": "The transport layer reads the port number and puts the segments back in order.",
+          "data": {
+            "segment": "1 of 1000",
+            "src port": "50000",
+            "dst port": "443",
+            "header": "TCP"
+          }
+        },
+        {
+          "from": "trans",
+          "to": "sess",
+          "track": "up",
+          "label": "Join the segments",
+          "desc": "All 1000 segments are joined back into one block of data that belongs to the open session.",
+          "data": {
+            "session": "42",
+            "state": "open",
+            "data": "1.4 MB"
+          }
+        },
+        {
+          "from": "sess",
+          "to": "pres",
+          "track": "up",
+          "label": "Decrypt and unpack",
+          "desc": "The presentation layer decrypts the data with TLS and expands it back to its full size.",
+          "data": {
+            "decrypted": "TLS",
+            "compressed": "no",
+            "size": "2 MB"
+          }
+        },
+        {
+          "from": "pres",
+          "to": "app",
+          "track": "up",
+          "label": "File arrives",
+          "desc": "The application layer hands the finished file to the receiving program. The file is back as it was sent.",
+          "data": {
+            "file": "report.pdf",
+            "size": "2 MB"
+          }
+        }
+      ]
+    }
+  ]
+}

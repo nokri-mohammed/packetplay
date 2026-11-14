@@ -38,3 +38,4 @@ flowchart TD
 | 2026-11-14 | general-purpose (sonnet) | T-20261114-19 done: website example (DNS, TCP handshake, TLS handshake, HTTPS request), 10 steps, 80.4 s at 1x. Manager re-ran tests (177 pass), typecheck, all three builds. |
 | 2026-11-14 | manager (inline, no agent) | CEO: 'speed up slightly the 1x'. Constants only: hop 1.3 s, rest 0.75 s, flow 5 s, gap 0.5 s, pulse 0.75 s (about 18 percent faster). WebRTC 57.2 s, UDP 18.3 s, website 66 s at 1x. Tests updated by hand, 177 pass. |
 | 2026-11-14 | manager (inline, no agent) | CEO: website example should start with 'visit website'. Added node 'you' (user icon) and chapter 1 'You visit a website' (you to laptop, 1 hop); chapters renumbered. 5 chapters, 11 steps, 68.55 s at 1x. 177 pass. |
+| 2026-11-14 | general-purpose (sonnet) | T-20261114-20 done: OSI example (7 layers, file down to bits, then back up), 12 steps, 30.1 s at 1x. Manager re-ran tests (179 pass), typecheck, check-public. |
