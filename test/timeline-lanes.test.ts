@@ -4,7 +4,7 @@ import { lane } from "../src/lanes.ts";
 import { layoutScene, type Layout } from "../src/layout.ts";
 import { loadScene } from "../src/load.ts";
 import { frameAt } from "../src/player-core.ts";
-import { HOP_MS, compileTimeline } from "../src/timeline.ts";
+import { HOP_MIN_MS, HOP_SPEED, NODE_DWELL_MS, compileTimeline } from "../src/timeline.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 
@@ -55,7 +55,9 @@ describe("timeline uses lanes", () => {
   });
 
   test("with both, the second packet moves along back of the mirrored hop, with the same timing", () => {
-    const f = frameAt(tl, HOP_MS / 2);
+    // Both hops are 75.4927 px, round(75.4927 / 0.07) = 1078 ms, so half way is 539 ms.
+    expect(s1!.hops.map((h) => h.durMs)).toEqual([1078, 1078]);
+    const f = frameAt(tl, 539);
     expect(f.packets.map((p) => p.direction)).toEqual([1, -1]);
     const fwd = s1!.hops[0]!;
     const rev = s1!.hops[1]!;
@@ -89,38 +91,46 @@ describe("webrtc example lanes", () => {
 });
 
 describe("timing with node dwell", () => {
-  test("the webrtc example totals 49000 ms, by hand", async () => {
-    // hop step: n * (1100 + 650) = n * 1750; flow step: 4300; gap after each step: 450
-    // 3 hops = 5250 (x4 steps), 6 hops = 10500 (x2 steps), flow = 4300
-    // 4 * 5250 + 2 * 10500 + 4300 + 6 gaps * 450 = 21000 + 21000 + 4300 + 2700 = 49000
+  test("the webrtc example totals 51918 ms, by hand", async () => {
+    // Hop lengths: 75.4927 px -> round(1078.47) = 1078 ms, 75.8 px -> round(1082.86) = 1083 ms,
+    // 195 px -> round(2785.71) = 2786 ms. Each hop is followed by a 650 ms rest.
+    // Step 1: 1078 + 1078 + 1083 = 3239, plus 3 * 650 = 1950: 5189 ms. Step 2 is the same hops reversed: 5189 ms.
+    // Steps 3 and 4: 3 * 1078 = 3234 + 1950 = 5184 ms each.
+    // Step 5: 1078, 1078, 1083, 1083, 2786, 1078 = 8186 + 6 * 650 = 3900: 12086 ms. Step 6 has the same hops: 12086 ms.
+    // Step 7 is a flow: 4300 ms. A gap of 450 ms follows each of the first 6 steps.
+    // 5189 + 5189 + 5184 + 5184 + 12086 + 12086 + 4300 + 6 * 450 = 49218 + 2700 = 51918.
     const s = await loadScene(root + "examples/webrtc.scene.yaml");
     const tl = compileTimeline(s, layoutScene(s));
     expect(tl.steps.map((st) => [st.startMs, st.endMs])).toEqual([
-      [0, 5250],
-      [5700, 10950],
-      [11400, 16650],
-      [17100, 22350],
-      [22800, 33300],
-      [33750, 44250],
-      [44700, 49000],
+      [0, 5189],
+      [5639, 10828],
+      [11278, 16462],
+      [16912, 22096],
+      [22546, 34632],
+      [35082, 47168],
+      [47618, 51918],
     ]);
-    expect(tl.totalMs).toBe(49000);
+    expect(tl.totalMs).toBe(51918);
   });
 
-  test("hops start every 1750 ms, travel 1100 ms, and the packet rests on the arrived node", async () => {
+  test("hop i + 1 starts 650 ms after hop i ends, and the packet rests on the arrived node", async () => {
     const s = await loadScene(root + "examples/webrtc.scene.yaml");
     const tl = compileTimeline(s, layoutScene(s));
     const st = tl.steps[0]!;
     expect(st.hops.map((h) => [h.startMs, h.endMs])).toEqual([
-      [0, 1100],
-      [1750, 2850],
-      [3500, 4600],
+      [0, 1078],
+      [1728, 2806],
+      [3456, 4539],
     ]);
-    // Rest after hop 0 is 1100..1750: hidden while the node bumps (1100..1749), then it leaves the far side at 1750.
+    for (let i = 1; i < st.hops.length; i++) {
+      expect(st.hops[i]!.startMs).toBe(st.hops[i - 1]!.endMs + NODE_DWELL_MS);
+    }
+    expect(st.endMs).toBe(st.hops[2]!.endMs + NODE_DWELL_MS);
+    // Rest after hop 0 is 1078..1728: hidden while the node bumps (1078..1727), then it leaves the far side at 1728.
     expect(frameAt(tl, 1500).packets).toEqual([]);
-    expect(frameAt(tl, 1749).packets).toEqual([]);
+    expect(frameAt(tl, 1727).packets).toEqual([]);
     const h1 = st.hops[1]!;
-    const rest = frameAt(tl, 1750).packets[0]!;
+    const rest = frameAt(tl, 1728).packets[0]!;
     expect([rest.x, rest.y]).toEqual([h1.x1, h1.y1]);
     const last = st.hops[2]!;
     const final = frameAt(tl, 5000);
@@ -128,6 +138,76 @@ describe("timing with node dwell", () => {
     expect([final.packets[0]!.x, final.packets[0]!.y]).toEqual([last.x2, last.y2]);
     expect(final.packets[0]!.label).toBe(st.label);
     expect(final.packets[0]!.data).toEqual(last.data);
+  });
+});
+
+describe("constant packet speed", () => {
+  // Nodes on one row: a at 0, b at 200, c at 500, d at 600. Hop lengths are the centre distance minus 2 * 44:
+  // a to b 112 px, b to c 212 px, c to d 100 - 88 = 12 px.
+  const row = (steps: unknown[]) => {
+    const sc = {
+      title: "T",
+      nodes: Object.fromEntries(["a", "b", "c", "d"].map((k) => [k, { label: k, icon: "server" }])),
+      links: [["a", "b"], ["b", "c"], ["c", "d"]],
+      chapters: [{ title: "c", steps }],
+    } as unknown as Scene;
+    const x: Record<string, number> = { a: 0, b: 200, c: 500, d: 600 };
+    const layout = {
+      width: 0,
+      height: 0,
+      origin: { x: 0, y: 0 },
+      groups: {},
+      nodes: Object.fromEntries(Object.entries(x).map(([k, v]) => [k, { x: v, y: 0, i: 0, j: 0 }])),
+    } as Layout;
+    return compileTimeline(sc, layout);
+  };
+
+  test("constants", () => {
+    expect([HOP_SPEED, HOP_MIN_MS]).toEqual([0.07, 350]);
+  });
+
+  test("a short hop clamps to HOP_MIN_MS", () => {
+    // c to d: 12 px, round(12 / 0.07) = 171 ms, below the floor, so 350 ms.
+    const h = row([{ from: "c", to: "d" }]).steps[0]!.hops[0]!;
+    expect(h.durMs).toBe(350);
+    expect([h.startMs, h.endMs]).toEqual([0, 350]);
+  });
+
+  test("hops of different length take proportional time", () => {
+    // a to b: 112 / 0.07 = 1600 ms. b to c: 212 / 0.07 = 3028.57, rounded 3029 ms.
+    const [h0, h1] = row([{ from: "a", to: "c" }]).steps[0]!.hops;
+    expect([h0!.durMs, h1!.durMs]).toEqual([1600, 3029]);
+    expect(h1!.durMs / h0!.durMs).toBeCloseTo(212 / 112, 3);
+    // h1 starts at 1600 + 650 = 2250 and ends at 2250 + 3029 = 5279; the step ends 650 ms later.
+    expect([h1!.startMs, h1!.endMs]).toEqual([2250, 5279]);
+    expect(row([{ from: "a", to: "c" }]).steps[0]!.endMs).toBe(5929);
+  });
+
+  test("a both step gives mirrored hops the same duration, the longer one", () => {
+    const st = row([{ from: "a", to: "c", both: true }]).steps[0]!;
+    // Hop 0 (112 px, 1600 ms) is mirrored with hop 1 (212 px, 3029 ms): both take 3029.
+    expect(st.hops.map((h) => h.durMs)).toEqual([3029, 3029]);
+    expect(st.hops.map((h) => [h.startMs, h.endMs])).toEqual([
+      [0, 3029],
+      [3679, 6708],
+    ]);
+    expect(st.endMs).toBe(7358);
+  });
+
+  test("website example: every hop moves at HOP_SPEED within 2 percent, except clamped ones", async () => {
+    const s = await loadScene(root + "examples/website.scene.yaml");
+    const tl = compileTimeline(s, layoutScene(s));
+    let checked = 0;
+    for (const st of tl.steps) {
+      if (st.mode !== "packet") continue;
+      for (const h of st.hops) {
+        if (h.durMs === HOP_MIN_MS) continue;
+        const speed = Math.hypot(h.x2 - h.x1, h.y2 - h.y1) / h.durMs;
+        expect(Math.abs(speed / HOP_SPEED - 1)).toBeLessThan(0.02);
+        checked++;
+      }
+    }
+    expect(checked).toBe(40);
   });
 });
 
@@ -196,8 +276,10 @@ describe("pass-through hop endpoints", () => {
     const tl = compileTimeline(sc, layout);
     const [h0, h1] = tl.steps[0]!.hops;
     expect([h0!.x2, h1!.x1]).toEqual([156, 244]);
-    expect(frameAt(tl, 1500).packets).toEqual([]); // inside the icon while it bumps
-    expect(frameAt(tl, 1749).packets).toEqual([]);
+    // Each hop is 112 px: round(112 / 0.07) = 1600 ms. Hop 0 ends at 1600 and hop 1 starts at 1600 + 650 = 2250.
+    expect([h0!.durMs, h1!.startMs]).toEqual([1600, 2250]);
+    expect(frameAt(tl, 1700).packets).toEqual([]); // inside the icon while it bumps
+    expect(frameAt(tl, 2249).packets).toEqual([]);
     const next = frameAt(tl, h1!.startMs).packets[0]!;
     expect([next.x, next.y]).toEqual([244, 8]);
   });

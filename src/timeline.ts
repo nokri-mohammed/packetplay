@@ -3,7 +3,10 @@ import { lane, lanePacketEnds, laneId } from "./lanes.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
-export const HOP_MS = 1100;
+/** Packet speed on screen, in px per ms: a longer arrow takes proportionally longer. */
+export const HOP_SPEED = 0.07;
+/** Shortest time a hop may take, so a very short arrow is not a blink. */
+export const HOP_MIN_MS = 350;
 /** How long a packet rests at the node it has just reached. */
 export const NODE_DWELL_MS = 650;
 export const FLOW_MS = 4300;
@@ -43,6 +46,8 @@ export interface HopTL {
   y2: number;
   /** The other lane of the same link (to to from), used by the return packet when `both` is set. */
   back: { link: string; x1: number; y1: number; x2: number; y2: number };
+  /** Time the packet takes to cross this hop: length / HOP_SPEED, at least HOP_MIN_MS. */
+  durMs: number;
   startMs: number;
   endMs: number;
   data: Record<string, unknown>;
@@ -99,6 +104,11 @@ export interface Timeline {
   steps: StepTL[];
 }
 
+/** Time a packet needs for a hop of `len` px at HOP_SPEED, never below HOP_MIN_MS. */
+function hopDuration(len: number): number {
+  return Math.max(HOP_MIN_MS, Math.round(len / HOP_SPEED));
+}
+
 function compileStep(
   scene: Scene,
   layout: Layout,
@@ -117,15 +127,23 @@ function compileStep(
   const typing = step.typing ?? "";
   const typingMs = typing.length > 0 ? typing.length * TYPE_CHAR_MS + TYPE_HOLD_MS : 0;
   const goMs = startMs + typingMs; // the message leaves here
-  const endMs = goMs + (mode === "flow" ? FLOW_MS : hopCount * (HOP_MS + NODE_DWELL_MS));
+
+  const ends = [];
+  for (let i = 0; i < hopCount; i++) {
+    ends.push(lanePacketEnds(lane(layout, path[i] as string, path[i + 1] as string)));
+  }
+  const ownMs = ends.map((e) => hopDuration(Math.hypot(e.x2 - e.x1, e.y2 - e.y1)));
+  // A `both` step moves the forward hop i and the reverse packet on hop n - 1 - i together,
+  // so the two share the longer duration.
+  const durs = ownMs.map((d, i) => (step.both ? Math.max(d, ownMs[hopCount - 1 - i] as number) : d));
 
   const hops: HopTL[] = [];
+  let cursorMs = goMs;
   for (let i = 0; i < hopCount; i++) {
     const from = path[i] as string;
     const to = path[i + 1] as string;
-    const fwd = lane(layout, from, to);
     const rev = lane(layout, to, from);
-    const fe = lanePacketEnds(fwd);
+    const fe = ends[i] as ReturnType<typeof lanePacketEnds>;
     const re = lanePacketEnds(rev);
     const data: Record<string, unknown> = { ...(step.data ?? {}) };
     for (let k = 0; k <= i; k++) {
@@ -141,14 +159,18 @@ function compileStep(
       x2: fe.x2,
       y2: fe.y2,
       back: { link: rev.id, x1: re.x1, y1: re.y1, x2: re.x2, y2: re.y2 },
-      startMs: mode === "flow" ? goMs : goMs + i * (HOP_MS + NODE_DWELL_MS),
-      endMs: mode === "flow" ? goMs + FLOW_MS : goMs + i * (HOP_MS + NODE_DWELL_MS) + HOP_MS,
+      durMs: durs[i] as number,
+      startMs: mode === "flow" ? goMs : cursorMs,
+      endMs: mode === "flow" ? goMs + FLOW_MS : cursorMs + (durs[i] as number),
       data,
     };
     const note = step.at?.[to]?.desc;
     if (note !== undefined) hop.note = note;
     hops.push(hop);
+    cursorMs = hop.endMs + NODE_DWELL_MS;
   }
+  const lastHop = hops[hops.length - 1];
+  const endMs = mode === "flow" ? goMs + FLOW_MS : lastHop ? lastHop.endMs + NODE_DWELL_MS : goMs;
 
   return {
     id,

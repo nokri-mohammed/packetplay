@@ -1,4 +1,4 @@
-import { HOP_MS, TYPE_CHAR_MS, type HopTL, type StepTL, type Timeline } from "./timeline.ts";
+import { TYPE_CHAR_MS, type HopTL, type StepTL, type Timeline } from "./timeline.ts";
 
 export const SPEEDS: readonly number[] = [0.5, 1, 1.5, 2];
 export const PULSE_MS = 650;
@@ -62,7 +62,7 @@ function hopAt(step: StepTL, t: number): { index: number; hop: HopTL; f: number 
   if (found < 0) found = 0;
   const hop = step.hops[found];
   if (!hop) return null;
-  const f = Math.min(1, Math.max(0, (t - hop.startMs) / HOP_MS));
+  const f = Math.min(1, Math.max(0, (t - hop.startMs) / hop.durMs));
   return { index: found, hop, f };
 }
 

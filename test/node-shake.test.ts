@@ -53,11 +53,12 @@ describe("shakeOffset", () => {
 
 describe("shakeEvents", () => {
   test("fixture: source at the Enter flash (3 * 80), arrivals at every hop end", () => {
-    // typing "abc": 3 * 80 = 240 flash; typingMs = 740; hops end at 740 + 1100 and 740 + 1750 + 1100.
+    // typing "abc": 3 * 80 = 240 flash; typingMs = 740. Each hop is 112 px (200 apart, 44 trim at each end),
+    // round(112 / 0.07) = 1600 ms. Hop 0 ends at 740 + 1600 = 2340; hop 1 starts 2340 + 650 = 2990, ends 2990 + 1600 = 4590.
     const ev = shakeEvents(tl);
     expect(ev.get("a")).toEqual([240]);
-    expect(ev.get("b")).toEqual([1840]);
-    expect(ev.get("c")).toEqual([3590]);
+    expect(ev.get("b")).toEqual([2340]);
+    expect(ev.get("c")).toEqual([4590]);
   });
   test("flow steps have no shake", () => {
     const flow = {
@@ -85,20 +86,20 @@ describe("the dot after the shake", () => {
   test("hop edges", () => {
     expect([h0!.x2, h1!.x1, h1!.x2]).toEqual([156, 244, 356]);
   });
-  // Rest after hop 0: hop ends 1840, next starts 2490 (650 ms rest). The bump lasts the whole 650 ms rest,
-  // so the dot is hidden from 1840 to 2489 (inside the icon) and leaves the far edge (244) at 2490, no pause.
+  // Rest after hop 0: hop ends 2340, next starts 2990 (650 ms rest). The bump lasts the whole 650 ms rest,
+  // so the dot is hidden from 2340 to 2989 (inside the icon) and leaves the far edge (244) at 2990, no pause.
   test("hidden inside the icon during the bump", () => {
-    for (const t of [1840, 2000, 2489]) expect(frameAt(tl, t).packets).toEqual([]);
-    const before = frameAt(tl, 1839).packets[0]!;
+    for (const t of [2340, 2500, 2989]) expect(frameAt(tl, t).packets).toEqual([]);
+    const before = frameAt(tl, 2339).packets[0]!;
     expect(before.x).toBeCloseTo(156, 0); // 1 ms before arrival it is still travelling
     expect(before.y).toBe(8);
   });
   test("the dot leaves the far edge the moment the bump ends, with no pause", () => {
-    const next = frameAt(tl, 2490).packets[0]!;
+    const next = frameAt(tl, 2990).packets[0]!;
     expect([next.x, next.y]).toEqual([244, 8]);
   });
   test("after the last hop the dot stays at the near edge for the whole rest", () => {
-    for (const t of [3590, 3900, 4200, 4239]) {
+    for (const t of [4590, 4900, 5200, 5239]) {
       const p = frameAt(tl, t).packets[0]!;
       expect([p.x, p.y]).toEqual([356, 8]);
     }

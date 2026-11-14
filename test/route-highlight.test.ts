@@ -11,6 +11,7 @@ const hop = (from: string, to: string): HopTL => ({
   x2: 10,
   y2: 0,
   back: { link: `${to}--${from}`, x1: 10, y1: 8, x2: 0, y2: 8 },
+  durMs: 0,
   startMs: 0,
   endMs: 0,
   data: {},

@@ -27,26 +27,27 @@ const tl = compileTimeline(scene, layoutScene(scene));
 const [typed, plain] = tl.steps;
 
 describe("timeline with typing", () => {
-  // "abc": 3 * 80 + 500 = 740 ms of typing. 2 hops of 1750 ms: 3500. endMs = 740 + 3500 = 4240.
+  // "abc": 3 * 80 + 500 = 740 ms of typing. Neighbour nodes: a 75.4927 px hop takes round(75.4927 / 0.07) = 1078 ms.
+  // 2 hops of 1078 + 650 rest = 1728 each: 3456. endMs = 740 + 3456 = 4196.
   test("typingMs and the shifted hops", () => {
     expect(typed!.typing).toBe("abc");
     expect(typed!.typingMs).toBe(740);
     expect(typed!.hops.map((h) => [h.startMs, h.endMs])).toEqual([
-      [740, 1840],
-      [2490, 3590],
+      [740, 1818],
+      [2468, 3546],
     ]);
-    expect(typed!.endMs).toBe(4240);
+    expect(typed!.endMs).toBe(4196);
   });
-  // The next step starts after a 450 ms gap at 4690 and has no typing, so nothing shifts.
+  // The next step starts after a 450 ms gap at 4196 + 450 = 4646 and has no typing, so nothing shifts.
   test("a step without typing is unchanged", () => {
     expect(plain!.typingMs).toBe(0);
     expect(plain!.typing).toBe("");
-    expect(plain!.startMs).toBe(4690);
+    expect(plain!.startMs).toBe(4646);
     expect(plain!.hops.map((h) => [h.startMs, h.endMs])).toEqual([
-      [4690, 5790],
-      [6440, 7540],
+      [4646, 5724],
+      [6374, 7452],
     ]);
-    expect(plain!.endMs).toBe(8190);
+    expect(plain!.endMs).toBe(8102);
   });
   test("no packet is drawn while typing, then it leaves at the first hop", () => {
     expect(frameAt(tl, 739).packets).toEqual([]);
