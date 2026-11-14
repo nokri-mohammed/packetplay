@@ -1,7 +1,7 @@
 import { HOP_MS, type HopTL, type StepTL, type Timeline } from "./timeline.ts";
 
 export const SPEEDS: readonly number[] = [0.5, 1, 1.5, 2];
-export const PULSE_MS = 900;
+export const PULSE_MS = 750;
 
 export interface Caption {
   chapterTitle: string;

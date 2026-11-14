@@ -89,38 +89,38 @@ describe("webrtc example lanes", () => {
 });
 
 describe("timing with node dwell", () => {
-  test("the webrtc example totals 69600 ms, by hand", async () => {
-    // hop step: n * (1600 + 900) = n * 2500; flow step: 6000; gap after each step: 600
-    // 3 hops = 7500 (x4 steps), 6 hops = 15000 (x2 steps), flow = 6000
-    // 4 * 7500 + 2 * 15000 + 6000 + 6 gaps * 600 = 30000 + 30000 + 6000 + 3600 = 69600
+  test("the webrtc example totals 57200 ms, by hand", async () => {
+    // hop step: n * (1300 + 750) = n * 2050; flow step: 5000; gap after each step: 500
+    // 3 hops = 6150 (x4 steps), 6 hops = 12300 (x2 steps), flow = 5000
+    // 4 * 6150 + 2 * 12300 + 5000 + 6 gaps * 500 = 24600 + 24600 + 5000 + 3000 = 57200
     const s = await loadScene(root + "examples/webrtc.scene.yaml");
     const tl = compileTimeline(s, layoutScene(s));
     expect(tl.steps.map((st) => [st.startMs, st.endMs])).toEqual([
-      [0, 7500],
-      [8100, 15600],
-      [16200, 23700],
-      [24300, 31800],
-      [32400, 47400],
-      [48000, 63000],
-      [63600, 69600],
+      [0, 6150],
+      [6650, 12800],
+      [13300, 19450],
+      [19950, 26100],
+      [26600, 38900],
+      [39400, 51700],
+      [52200, 57200],
     ]);
-    expect(tl.totalMs).toBe(69600);
+    expect(tl.totalMs).toBe(57200);
   });
 
-  test("hops start every 2500 ms, travel 1600 ms, and the packet rests on the arrived node", async () => {
+  test("hops start every 2050 ms, travel 1300 ms, and the packet rests on the arrived node", async () => {
     const s = await loadScene(root + "examples/webrtc.scene.yaml");
     const tl = compileTimeline(s, layoutScene(s));
     const st = tl.steps[0]!;
     expect(st.hops.map((h) => [h.startMs, h.endMs])).toEqual([
-      [0, 1600],
-      [2500, 4100],
-      [5000, 6600],
+      [0, 1300],
+      [2050, 3350],
+      [4100, 5400],
     ]);
     const h0 = st.hops[0]!;
     const rest = frameAt(tl, 2000).packets[0]!;
     expect([rest.x, rest.y]).toEqual([h0.x2, h0.y2]);
     const last = st.hops[2]!;
-    const final = frameAt(tl, 7000);
+    const final = frameAt(tl, 6000);
     expect(final.stepId).toBe(st.id);
     expect([final.packets[0]!.x, final.packets[0]!.y]).toEqual([last.x2, last.y2]);
     expect(final.packets[0]!.label).toBe(st.label);

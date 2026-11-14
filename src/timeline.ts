@@ -3,11 +3,11 @@ import { lane, laneId } from "./lanes.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
-export const HOP_MS = 1600;
+export const HOP_MS = 1300;
 /** How long a packet rests at the node it has just reached. */
-export const NODE_DWELL_MS = 900;
-export const FLOW_MS = 6000;
-export const STEP_GAP_MS = 600;
+export const NODE_DWELL_MS = 750;
+export const FLOW_MS = 5000;
+export const STEP_GAP_MS = 500;
 export const NEUTRAL_COLOR = "#6b7280";
 export const TRACK_COLORS: Record<string, string> = {
   blue: "#3b82f6",
