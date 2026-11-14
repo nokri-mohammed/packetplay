@@ -1,0 +1,21 @@
+name: release-please
+
+# Reads Conventional Commits on main and keeps one release pull request open. The PR holds the next
+# version (package.json, plugin.json) and the generated CHANGELOG.md. Merging that PR is the release:
+# it creates the git tag and the GitHub release. Nothing is published to npm (package.json is private).
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

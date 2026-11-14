@@ -94,6 +94,17 @@ changes arrive with `/plugin update`.
 Built with Bun and TypeScript on top of [anime.js](https://animejs.com). See the
 [design plan](docs/plans/2026-11-14-packetplay.md).
 
+## Releasing
+
+Releases are automatic from [Conventional Commits](https://www.conventionalcommits.org). A GitHub
+Action (release-please) keeps one release pull request open on `main`. It holds the next version and
+the generated `CHANGELOG.md`. Merging that pull request is the release: it creates the git tag and the
+GitHub release. Before 1.0, `feat` bumps the minor number, `fix` the patch number, and a breaking
+change (`feat!:` or a `BREAKING CHANGE:` footer) also bumps the minor number. To force a version, add a
+`Release-As: x.y.z` footer to a commit message. The package is marked private, so nothing is published
+to npm. The version lives in `package.json` and `.claude-plugin/plugin.json`; the scene schema version
+(see below) is separate and only changes for a breaking change to the scene format.
+
 ## Versioning
 
 A scene can say which schema version it is written for with an optional top-level `version` (an

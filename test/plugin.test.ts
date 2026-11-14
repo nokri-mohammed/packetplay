@@ -35,3 +35,36 @@ describe("Claude Code plugin manifests", () => {
     }
   });
 });
+
+describe("release automation", () => {
+  const config = JSON.parse(read("release-please-config.json"));
+  const manifest = JSON.parse(read(".release-please-manifest.json"));
+  const workflow = read(".github/workflows/release-please.yml");
+  const plugin = JSON.parse(read(".claude-plugin/plugin.json"));
+  const pkg = JSON.parse(read("package.json"));
+
+  test("config bumps minor before 1.0 and updates plugin.json", () => {
+    expect(config["release-type"]).toBe("node");
+    expect(config["bump-minor-pre-major"]).toBe(true);
+    expect(config.packages["."]["changelog-path"]).toBe("CHANGELOG.md");
+    expect(config.packages["."]["extra-files"]).toEqual([
+      { type: "json", path: ".claude-plugin/plugin.json", jsonpath: "$.version" },
+    ]);
+  });
+
+  test("manifest, package.json and plugin.json start from the same version", () => {
+    expect(manifest["."]).toBe(pkg.version);
+    expect(plugin.version).toBe(pkg.version);
+  });
+
+  test("the package stays private, so nothing can be published to npm by accident", () => {
+    expect(pkg.private).toBe(true);
+  });
+
+  test("the workflow pins the action to a commit and has narrow permissions", () => {
+    expect(workflow).toMatch(/googleapis\/release-please-action@[0-9a-f]{40}/);
+    expect(workflow).toContain("contents: write");
+    expect(workflow).toContain("pull-requests: write");
+    expect(workflow.includes("—")).toBe(false);
+  });
+});

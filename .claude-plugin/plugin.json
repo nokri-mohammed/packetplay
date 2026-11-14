@@ -1,9 +1,18 @@
 {
   "name": "packetplay",
+  "version": "0.0.0",
   "description": "Turn a YAML or JSON scene into one animated, self-contained HTML diagram of how packets, requests and files travel. Includes a skill that writes, validates and builds scenes.",
-  "author": { "name": "nokri-mohammed" },
+  "author": {
+    "name": "nokri-mohammed"
+  },
   "homepage": "https://github.com/nokri-mohammed/packetplay",
   "repository": "https://github.com/nokri-mohammed/packetplay",
   "license": "MIT",
-  "keywords": ["diagram", "animation", "networking", "svg", "scene"]
+  "keywords": [
+    "diagram",
+    "animation",
+    "networking",
+    "svg",
+    "scene"
+  ]
 }
