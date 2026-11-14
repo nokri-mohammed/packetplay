@@ -25,6 +25,10 @@
 - Only `icons/isoflow/block.svg` has a `<style>` block (classes `.st0` to `.st5`, not scoped). Safe
   today, but it would clash if another icon with a style block joined the same page. Scope or
   inline the styles if more such icons are added. (T-20261114-9)
+- The static SVG has no `<style>` (a test forbids it): styling uses presentation attributes
+  (`fill="currentColor"` and so on). Player CSS lives in the HTML page around the SVG, never inside
+  it. When a ticket and a frozen test disagree the test wins, so read the test regexes before
+  writing structure advice. (T-20261114-10)
 - The icon enum in `schema/scene.schema.json` is a static list. `test/schema.test.ts` fails if it
   drifts from `icons/isoflow/`. Update the schema and run `bun run gen:types` when icons change.
   (T-20261114-1)
