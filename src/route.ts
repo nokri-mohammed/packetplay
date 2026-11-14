@@ -1,4 +1,4 @@
-import type { Scene, Step } from "./index.ts";
+import type { Scene, Step } from "./types.generated.ts";
 
 /** Shortest path by hop count over undirected links; ties follow link declaration order. */
 function shortest(adj: Map<string, string[]>, from: string, to: string): string[] {
@@ -24,7 +24,10 @@ function shortest(adj: Map<string, string[]>, from: string, to: string): string[
   return path.reverse();
 }
 
-/** Node path for a step: from, through each `via` node in order, to `to`. */
+/**
+ * Node path for a step: from, through each `via` node in order, to `to`.
+ * Assumes every node id exists (validation runs first); an unknown id surfaces as "no route".
+ */
 export function routeStep(scene: Scene, step: Step): string[] {
   if (step.from === step.to) throw new Error(`from and to are the same node "${step.from}"`);
   const adj = new Map<string, string[]>();

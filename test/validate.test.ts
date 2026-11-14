@@ -39,13 +39,7 @@ describe("validateScene: schema errors", () => {
   test("unknown top-level key gives an issue with a path and message", () => {
     const s = base();
     s.bogus = 1;
-    const issues = validateScene(s);
-    expect(issues.length).toBeGreaterThan(0);
-    for (const i of issues) {
-      expect(typeof i.path).toBe("string");
-      expect(typeof i.message).toBe("string");
-      expect(i.message.length).toBeGreaterThan(0);
-    }
+    expect(validateScene(s)).toEqual([{ path: "", message: 'the scene: unknown key "bogus"' }]);
   });
 
   test("never throws on bad input", () => {
@@ -61,7 +55,7 @@ describe("validateScene: schema errors", () => {
     s.bogus = 1; // schema
     const issues = validateScene(s);
     const semantic = issues.findIndex((i) => i.message.includes('node "ghost" does not exist'));
-    const schema = issues.findIndex((i) => !/^chapter \d+/.test(i.message));
+    const schema = issues.findIndex((i) => i.message === 'the scene: unknown key "bogus"');
     expect(semantic).toBeGreaterThan(-1);
     expect(schema).toBeGreaterThan(-1);
     expect(schema).toBeLessThan(semantic);
@@ -69,6 +63,38 @@ describe("validateScene: schema errors", () => {
 });
 
 describe("validateScene: semantic errors", () => {
+  test("no route in a via leg is reported with the failing leg", () => {
+    const s = base();
+    s.chapters[0].steps[0] = { from: "a", to: "c", via: ["d"] };
+    expect(validateScene(s)).toContainEqual({
+      path: "chapters[0].steps[0]",
+      message: 'chapter 1, step 1: no route from "a" to "d"',
+    });
+  });
+
+  test("unknown track inside a parallel block", () => {
+    const s = base();
+    s.chapters[0].steps = [{ parallel: [{ from: "a", to: "b" }, { from: "a", to: "b", track: "nope" }] }];
+    expect(validateScene(s)).toContainEqual({
+      path: "chapters[0].steps[0].parallel[1].track",
+      message: 'chapter 1, step 1: track "nope" does not exist',
+    });
+  });
+
+  test("unknown via node inside a parallel block", () => {
+    const s = base();
+    s.chapters[0].steps = [{ parallel: [{ from: "a", to: "b", via: ["ghost"] }] }];
+    expect(validateScene(s)).toContainEqual({
+      path: "chapters[0].steps[0].parallel[0].via[0]",
+      message: 'chapter 1, step 1: via node "ghost" does not exist',
+    });
+  });
+
+  test("the JSON example has no issues", () => {
+    const j = JSON.parse(readFileSync(root + "examples/webrtc.scene.json", "utf8"));
+    expect(validateScene(j)).toEqual([]);
+  });
+
   test("unknown node in a step names chapter, step and node (1-based)", () => {
     const s = base();
     s.chapters[1].steps[0].from = "stn";
@@ -120,7 +146,8 @@ describe("validateScene: semantic errors", () => {
   test("parallel step with no children", () => {
     const s = base();
     s.chapters[0].steps = [{ parallel: [] }];
-    expect(messages(s).some((m) => /parallel/.test(m))).toBe(true);
+    expect(messages(s)).toContain('"chapters[0].steps[0].parallel": must have at least 1 item');
+    expect(messages(s)).toContain('"chapters[0].steps[0]": is neither a valid step nor a valid parallel block');
   });
 
   test("step with no route between disconnected nodes", () => {
@@ -145,6 +172,6 @@ describe("validateScene: semantic errors", () => {
     const s = base();
     s.chapters[1].steps[0].from = "stn";
     const issue = validateScene(s).find((i) => i.message.includes('"stn"'));
-    expect(issue?.path).toContain("chapters");
+    expect(issue?.path).toBe("chapters[1].steps[0].from");
   });
 });

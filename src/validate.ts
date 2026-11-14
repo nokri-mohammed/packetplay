@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import Ajv2020 from "ajv/dist/2020";
 import type { ErrorObject } from "ajv";
+import { routeStep } from "./route.ts";
+import type { Scene, Step } from "./types.generated.ts";
 
 export interface Issue {
   /** Where the problem is, for example `chapters[1].steps[0].from`. */
@@ -12,7 +14,7 @@ export interface Issue {
 const schema = JSON.parse(
   readFileSync(new URL("../schema/scene.schema.json", import.meta.url), "utf8"),
 );
-const ajv = new Ajv2020({ allErrors: true, strict: false });
+const ajv = new Ajv2020({ allErrors: true, strict: true });
 const check = ajv.compile(schema);
 
 function pathOf(ptr: string): string {
@@ -90,7 +92,6 @@ function semanticIssues(scene: Obj): Issue[] {
     }
   }
 
-  const adj = new Map<string, Set<string>>();
   const links: unknown[] = Array.isArray(scene.links) ? scene.links : [];
   links.forEach((l, i) => {
     if (!Array.isArray(l)) return;
@@ -104,29 +105,12 @@ function semanticIssues(scene: Obj): Issue[] {
     if (a === b && has(nodes, a)) {
       issues.push({ path: `links[${i}]`, message: `link ${k}: node "${a}" is linked to itself` });
     }
-    if (has(nodes, a) && has(nodes, b) && a !== b) {
-      if (!adj.has(a)) adj.set(a, new Set());
-      if (!adj.has(b)) adj.set(b, new Set());
-      adj.get(a)!.add(b);
-      adj.get(b)!.add(a);
-    }
   });
 
-  const connected = (from: string, to: string): boolean => {
-    const seen = new Set([from]);
-    const queue = [from];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      if (cur === to) return true;
-      for (const nx of adj.get(cur) ?? []) {
-        if (!seen.has(nx)) {
-          seen.add(nx);
-          queue.push(nx);
-        }
-      }
-    }
-    return false;
-  };
+  // Routing is only safe when every link is a pair of existing node ids.
+  const linksOk =
+    Array.isArray(scene.links) &&
+    scene.links.every((l: unknown) => Array.isArray(l) && l.length === 2 && l.every((id) => has(nodes, id)));
 
   const checkStep = (step: Obj, ch: number, st: number, base: string) => {
     const label = `chapter ${ch + 1}, step ${st + 1}`;
@@ -153,12 +137,11 @@ function semanticIssues(scene: Obj): Issue[] {
       issues.push({ path: base, message: `${label}: from and to are the same node "${step.from}"` });
       return;
     }
-    const seq = [step.from, ...via, step.to] as string[];
-    for (let i = 0; i < seq.length - 1; i++) {
-      if (seq[i] !== seq[i + 1] && !connected(seq[i]!, seq[i + 1]!)) {
-        issues.push({ path: base, message: `${label}: no route from "${seq[i]}" to "${seq[i + 1]}"` });
-        break;
-      }
+    if (!linksOk) return;
+    try {
+      routeStep(scene as unknown as Scene, step as unknown as Step);
+    } catch (e) {
+      issues.push({ path: base, message: `${label}: ${(e as Error).message}` });
     }
   };
 

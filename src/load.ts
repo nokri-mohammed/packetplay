@@ -7,8 +7,11 @@ export type SceneFormat = "yaml" | "json";
 
 /** Parse scene text. Throws on malformed input. Does not validate the model. */
 export function parseScene(text: string, format: SceneFormat): Scene {
-  if (format === "json") return JSON.parse(text) as Scene;
-  return parseYaml(text) as Scene;
+  const value: unknown = format === "json" ? JSON.parse(text) : parseYaml(text);
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("file is empty or not a scene");
+  }
+  return value as Scene;
 }
 
 /** Read a .yaml, .yml or .json scene file and return its model. */
@@ -34,6 +37,9 @@ export async function loadScene(path: string): Promise<Scene> {
   try {
     return parseScene(text, format);
   } catch (e) {
+    if ((e as Error).message === "file is empty or not a scene") {
+      throw new Error(`${name}: file is empty or not a scene`);
+    }
     if (e instanceof YAMLParseError) {
       const line = e.linePos?.[0]?.line;
       const where = line ? `line ${line}` : "unknown line";

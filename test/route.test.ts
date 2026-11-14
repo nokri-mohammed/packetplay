@@ -86,16 +86,16 @@ describe("routeStep: via", () => {
 describe("routeStep: errors", () => {
   test("from equal to to is an error", () => {
     const s = mk([["a", "b"]]);
-    expect(() => routeStep(s, { from: "a", to: "a" } as Step)).toThrow(/same/);
+    expect(() => routeStep(s, { from: "a", to: "a" } as Step)).toThrow('from and to are the same node "a"');
   });
 
   test("no route names both nodes", () => {
     const s = mk([["a", "b"]]);
-    expect(() => routeStep(s, { from: "a", to: "d" } as Step)).toThrow(/"a".*"d"/);
+    expect(() => routeStep(s, { from: "a", to: "d" } as Step)).toThrow('no route from "a" to "d"');
   });
 
   test("no route between via nodes names the pair that cannot be joined", () => {
     const s = mk([["a", "b"], ["c", "d"]]);
-    expect(() => routeStep(s, { from: "a", to: "d", via: ["b"] } as Step)).toThrow(/"b".*"d"/);
+    expect(() => routeStep(s, { from: "a", to: "d", via: ["b"] } as Step)).toThrow('no route from "b" to "d"');
   });
 });

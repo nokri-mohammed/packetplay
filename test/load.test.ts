@@ -36,6 +36,24 @@ describe("loadScene", () => {
     await expect(loadScene(fx("malformed.scene.json"))).rejects.toThrow(/malformed\.scene\.json/);
   });
 
+  test("an empty yaml file rejects with the file name", async () => {
+    await expect(loadScene(fx("empty.scene.yaml"))).rejects.toThrow(
+      "empty.scene.yaml: file is empty or not a scene",
+    );
+  });
+
+  test("a json null file rejects with the file name", async () => {
+    await expect(loadScene(fx("null.scene.json"))).rejects.toThrow(
+      "null.scene.json: file is empty or not a scene",
+    );
+  });
+
+  test(".yml and upper-case .YAML extensions are accepted", async () => {
+    const y = await loadScene(ex("webrtc.scene.yaml"));
+    expect(await loadScene(fx("lower.scene.yml"))).toEqual(y);
+    expect(await loadScene(fx("upper.SCENE.YAML"))).toEqual(y);
+  });
+
   test("a missing file rejects with an error naming the file", async () => {
     await expect(loadScene(fx("nope.scene.yaml"))).rejects.toThrow(/nope\.scene\.yaml/);
   });
@@ -54,10 +72,17 @@ describe("parseScene", () => {
   });
 
   test("throws on malformed yaml", () => {
-    expect(() => parseScene("a: [1, 2\n", "yaml")).toThrow();
+    expect(() => parseScene("a: [1, 2\n", "yaml")).toThrow(/Flow sequence/);
   });
 
   test("throws on malformed json", () => {
-    expect(() => parseScene("{nope", "json")).toThrow();
+    expect(() => parseScene("{nope", "json")).toThrow(/JSON Parse error/);
+  });
+
+  test("throws on empty yaml, json null and non-object json", () => {
+    expect(() => parseScene("", "yaml")).toThrow("file is empty or not a scene");
+    expect(() => parseScene("# just a comment\n", "yaml")).toThrow("file is empty or not a scene");
+    expect(() => parseScene("null", "json")).toThrow("file is empty or not a scene");
+    expect(() => parseScene("[]", "json")).toThrow("file is empty or not a scene");
   });
 });
