@@ -116,9 +116,11 @@ describe("timing with node dwell", () => {
       [1750, 2850],
       [3500, 4600],
     ]);
-    const h0 = st.hops[0]!;
-    const rest = frameAt(tl, 1500).packets[0]!;
-    expect([rest.x, rest.y]).toEqual([h0.x2, h0.y2]);
+    // Rest after hop 0 is 1100..1750: hidden while the node bumps (1100..1550), then on the far side.
+    expect(frameAt(tl, 1500).packets).toEqual([]);
+    const h1 = st.hops[1]!;
+    const rest = frameAt(tl, 1600).packets[0]!;
+    expect([rest.x, rest.y]).toEqual([h1.x1, h1.y1]);
     const last = st.hops[2]!;
     const final = frameAt(tl, 5000);
     expect(final.stepId).toBe(st.id);
@@ -176,7 +178,7 @@ describe("pass-through hop endpoints", () => {
     expect([h.x1, h.x2]).toEqual([44, 44]);
   });
 
-  test("the packet rests at the near edge, then the next hop starts at its own far edge", () => {
+  test("the packet is hidden at the node while it bumps, then shows at the far edge and the next hop starts there", () => {
     const sc = {
       title: "T",
       nodes: { a: { label: "a", icon: "server" }, b: { label: "b", icon: "server" }, c: { label: "c", icon: "server" } },
@@ -193,8 +195,9 @@ describe("pass-through hop endpoints", () => {
     const tl = compileTimeline(sc, layout);
     const [h0, h1] = tl.steps[0]!.hops;
     expect([h0!.x2, h1!.x1]).toEqual([156, 244]);
-    const rest = frameAt(tl, 1500).packets[0]!;
-    expect([rest.x, rest.y]).toEqual([156, 8]);
+    expect(frameAt(tl, 1500).packets).toEqual([]); // inside the icon while it bumps
+    const rest = frameAt(tl, 1600).packets[0]!;
+    expect([rest.x, rest.y]).toEqual([244, 8]); // far side of the icon
     const next = frameAt(tl, h1!.startMs).packets[0]!;
     expect([next.x, next.y]).toEqual([244, 8]);
   });

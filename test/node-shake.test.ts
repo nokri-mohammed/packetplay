@@ -86,12 +86,12 @@ describe("the dot after the shake", () => {
     expect([h0!.x2, h1!.x1, h1!.x2]).toEqual([156, 244, 356]);
   });
   // Rest after hop 0: hop ends 1840, next starts 2490 (650 ms rest). Shake ends 1840 + 450 = 2290,
-  // so the dot is at the near edge (156) until 2290 and at the far edge (244) for 2290..2490 (200 ms).
-  test("near edge during the shake", () => {
-    for (const t of [1840, 2000, 2289]) {
-      const p = frameAt(tl, t).packets[0]!;
-      expect([p.x, p.y]).toEqual([156, 8]);
-    }
+  // so the dot is hidden from 1840 to 2289 (inside the icon) and at the far edge (244) for 2290..2490 (200 ms).
+  test("hidden inside the icon during the bump", () => {
+    for (const t of [1840, 2000, 2289]) expect(frameAt(tl, t).packets).toEqual([]);
+    const before = frameAt(tl, 1839).packets[0]!;
+    expect(before.x).toBeCloseTo(156, 0); // 1 ms before arrival it is still travelling
+    expect(before.y).toBe(8);
   });
   test("far edge from the end of the shake until the next hop", () => {
     for (const t of [2290, 2400, 2489]) {

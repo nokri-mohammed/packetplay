@@ -262,19 +262,28 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
     const { index, hop, f } = at;
     let x = lerp(hop.x1, hop.x2, f);
     let y = lerp(hop.y1, hop.y2, f);
-    // After the shake at a node the dot sits on the far side of the icon, ready to leave.
+    // At a node that has another hop after it, the dot goes into the icon on arrival (hidden while the
+    // icon bumps) and comes out on the far side, ready to leave. The last node keeps its dot.
     const next = s.hops[index + 1];
-    if (next && t >= hop.endMs + SHAKE_MS) {
-      x = next.x1;
-      y = next.y1;
-    }
-    packets.push({ stepId: s.id, x, y, color: s.color, direction: 1, label: s.label, data: hop.data });
+    const inside = next !== undefined && t >= hop.endMs && t < hop.endMs + SHAKE_MS;
+    if (inside) continue;
+    const out = next !== undefined && t >= hop.endMs + SHAKE_MS;
+    packets.push({
+      stepId: s.id,
+      x: out ? (next as HopTL).x1 : lerp(hop.x1, hop.x2, f),
+      y: out ? (next as HopTL).y1 : lerp(hop.y1, hop.y2, f),
+      color: s.color,
+      direction: 1,
+      label: s.label,
+      data: hop.data,
+    });
     if (s.both) {
       const rev = s.hops[s.hops.length - 1 - index] as HopTL;
+      const revNext = out ? (s.hops[s.hops.length - 2 - index] as HopTL | undefined) : undefined;
       packets.push({
         stepId: s.id,
-        x: lerp(rev.back.x1, rev.back.x2, f),
-        y: lerp(rev.back.y1, rev.back.y2, f),
+        x: revNext ? revNext.back.x1 : lerp(rev.back.x1, rev.back.x2, f),
+        y: revNext ? revNext.back.y1 : lerp(rev.back.y1, rev.back.y2, f),
         color: s.color,
         direction: -1,
         label: s.label,
