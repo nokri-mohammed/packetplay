@@ -163,6 +163,49 @@ export function revealPop(t: number, atMs: number): { scale: number; rings: { r:
   return { scale, rings };
 }
 
+/** Length, amplitude (world px) and number of swings of a node shake. */
+export const SHAKE_MS = 450;
+export const SHAKE_AMP = 5;
+export const SHAKE_CYCLES = 4;
+
+/**
+ * Horizontal damped shake of a node that starts at `atMs`. With u = (t - atMs) / 450:
+ * dx = 5 * (1 - u) * sin(2 * pi * 4 * u) inside [atMs, atMs + 450], else 0. dy is always 0.
+ */
+export function nodeShake(t: number, atMs: number): { dx: number; dy: number } {
+  if (t < atMs || t > atMs + SHAKE_MS) return { dx: 0, dy: 0 };
+  const u = (t - atMs) / SHAKE_MS;
+  return { dx: SHAKE_AMP * (1 - u) * Math.sin(2 * Math.PI * SHAKE_CYCLES * u), dy: 0 };
+}
+
+/**
+ * Start times of node shakes, per node id, ascending. Every hop of a packet step shakes its arrival
+ * node at `hop.endMs`; a step with typing shakes its source node when Enter flashes. Flow steps: none.
+ */
+export function shakeEvents(tl: Timeline): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  const add = (id: string, at: number): void => {
+    const list = out.get(id);
+    if (list) list.push(at);
+    else out.set(id, [at]);
+  };
+  for (const s of tl.steps) {
+    if (s.mode !== "packet") continue;
+    if (s.typing.length > 0) add(s.path[0] as string, s.startMs + s.typing.length * TYPE_CHAR_MS);
+    for (const h of s.hops) add(h.to, h.endMs);
+  }
+  for (const list of out.values()) list.sort((a, b) => a - b);
+  return out;
+}
+
+/** Shake offset at time t from a node's event times: the latest event with atMs <= t wins. */
+export function shakeOffset(events: readonly number[] | undefined, t: number): { dx: number; dy: number } {
+  let at = -1;
+  let found = false;
+  for (const e of events ?? []) if (e <= t) { at = e; found = true; }
+  return found ? nodeShake(t, at) : { dx: 0, dy: 0 };
+}
+
 /** The caret blinks every 400 ms from the start of the step. */
 export const CARET_MS = 400;
 
@@ -218,8 +261,14 @@ export function frameAt(tl: Timeline, tMs: number): Frame {
     const at = hopAt(s, t);
     if (!at) continue;
     const { index, hop, f } = at;
-    const x = lerp(hop.x1, hop.x2, f);
-    const y = lerp(hop.y1, hop.y2, f);
+    let x = lerp(hop.x1, hop.x2, f);
+    let y = lerp(hop.y1, hop.y2, f);
+    // After the shake at a node the dot sits on the far side of the icon, ready to leave.
+    const next = s.hops[index + 1];
+    if (next && t >= hop.endMs + SHAKE_MS) {
+      x = next.x1;
+      y = next.y1;
+    }
     packets.push({ stepId: s.id, x, y, color: s.color, direction: 1, label: s.label, data: hop.data });
     if (s.both) {
       const rev = s.hops[s.hops.length - 1 - index] as HopTL;

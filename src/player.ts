@@ -14,6 +14,8 @@ import {
   prevTime,
   revealOpacity,
   revealPop,
+  shakeEvents,
+  shakeOffset,
   routeHighlight,
   typingState,
   stepSpeed,
@@ -296,18 +298,23 @@ function drawHidden(opacityOf: (id: string) => number): void {
 
 // Reveal pop: the node group scales about its centre (its transform is a translate to the centre) and
 // two rings expand from it. All of it is a pure function of the clock, so seeking works.
+// Every node can also shake (a translate before the scale, same pivot).
 const nodeGroups = new Map<string, { el: Element; orig: string }>();
-for (const id of hiddenIds) {
-  const el = [...svg.querySelectorAll("g[data-node]")].find((g) => g.getAttribute("data-node") === id);
-  if (el) nodeGroups.set(id, { el, orig: el.getAttribute("transform") ?? "" });
+for (const el of svg.querySelectorAll("g[data-node]")) {
+  const id = el.getAttribute("data-node");
+  if (id) nodeGroups.set(id, { el, orig: el.getAttribute("transform") ?? "" });
 }
+const shakes = shakeEvents(tl);
 function drawPop(t: number | null): string {
   let out = "";
   for (const [id, g] of nodeGroups) {
     const r = revealAt.get(id);
     const pop = t !== null && r ? revealPop(t, r.atMs) : { scale: 1, rings: [] };
-    if (pop.scale === 1) g.el.setAttribute("transform", g.orig);
-    else g.el.setAttribute("transform", `${g.orig} scale(${pop.scale.toFixed(3)})`);
+    const sh = t !== null && !reduced ? shakeOffset(shakes.get(id), t) : { dx: 0, dy: 0 };
+    let tf = g.orig;
+    if (sh.dx !== 0 || sh.dy !== 0) tf += ` translate(${sh.dx.toFixed(2)} ${sh.dy.toFixed(2)})`;
+    if (pop.scale !== 1) tf += ` scale(${pop.scale.toFixed(3)})`;
+    g.el.setAttribute("transform", tf);
     const pos = nodePos.get(id);
     const color = r ? (stepById.get(r.stepId)?.color ?? "#6b7280") : "#6b7280";
     if (!pos) continue;
