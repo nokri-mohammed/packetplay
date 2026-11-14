@@ -87,3 +87,42 @@ describe("webrtc example lanes", () => {
     expect(tl.steps[1]!.hops.map((h) => h.link)).toEqual(["sig--net", "net--r1", "r1--client"]);
   });
 });
+
+describe("timing with node dwell", () => {
+  test("the webrtc example totals 69600 ms, by hand", async () => {
+    // hop step: n * (1600 + 900) = n * 2500; flow step: 6000; gap after each step: 600
+    // 3 hops = 7500 (x4 steps), 6 hops = 15000 (x2 steps), flow = 6000
+    // 4 * 7500 + 2 * 15000 + 6000 + 6 gaps * 600 = 30000 + 30000 + 6000 + 3600 = 69600
+    const s = await loadScene(root + "examples/webrtc.scene.yaml");
+    const tl = compileTimeline(s, layoutScene(s));
+    expect(tl.steps.map((st) => [st.startMs, st.endMs])).toEqual([
+      [0, 7500],
+      [8100, 15600],
+      [16200, 23700],
+      [24300, 31800],
+      [32400, 47400],
+      [48000, 63000],
+      [63600, 69600],
+    ]);
+    expect(tl.totalMs).toBe(69600);
+  });
+
+  test("hops start every 2500 ms, travel 1600 ms, and the packet rests on the arrived node", async () => {
+    const s = await loadScene(root + "examples/webrtc.scene.yaml");
+    const tl = compileTimeline(s, layoutScene(s));
+    const st = tl.steps[0]!;
+    expect(st.hops.map((h) => [h.startMs, h.endMs])).toEqual([
+      [0, 1600],
+      [2500, 4100],
+      [5000, 6600],
+    ]);
+    const h0 = st.hops[0]!;
+    const rest = frameAt(tl, 2000).packets[0]!;
+    expect([rest.x, rest.y]).toEqual([h0.x2, h0.y2]);
+    const last = st.hops[2]!;
+    const final = frameAt(tl, 7000);
+    expect(final.stepId).toBe(st.id);
+    expect([final.packets[0]!.x, final.packets[0]!.y]).toEqual([last.x2, last.y2]);
+    expect(final.card).not.toBeNull();
+  });
+});

@@ -69,9 +69,10 @@ CEO asked for these changes on 2026-11-14 and said "go until everything is done"
 
 ## Report
 
-<The agent fills this in when finished. Start with `Status: done` (or `blocked`), then:>
+Status: done
 
-- **Did:**
-- **Verified (real output):**
-- **Left / needs a decision:**
-- **Lessons:**
+- **Did:** `src/timeline.ts`: HOP_MS 1600, new exported NODE_DWELL_MS 900, FLOW_MS 6000, STEP_GAP_MS 600; hop `i` starts at `startMs + i * (HOP_MS + NODE_DWELL_MS)`, ends at start + HOP_MS; packet step `endMs` = `startMs + hops * (HOP_MS + NODE_DWELL_MS)` (last hop endMs + dwell). `src/player-core.ts`: PULSE_MS 900, and `hopAt` fixed: with dwell gaps between hops the old loop fell through to the last hop at f=1 during a rest; it now picks the latest hop that has started and clamps f to 1, so the packet sits on the arrived node. Added two tests in `test/timeline-lanes.test.ts`. No existing test encoded the old numbers (no timeline test file exists), so nothing needed rewriting. README states no timings.
+- **Verified (real output):** `bun test`: 158 pass, 0 fail. `bun run typecheck`: clean. `bun run build:example`: Wrote dist/webrtc.html (77847 bytes). `./scripts/check-public.sh --all`: exit 0.
+  Hand calculation of totalMs: hop steps cost n * 2500 ms (3 hops = 7500, 6 hops = 15000), flow = 6000, gap 600 after each step. Steps: 0-7500, 8100-15600, 16200-23700, 24300-31800, 32400-47400, 48000-63000, 63600-69600. 4*7500 + 2*15000 + 6000 + 6*600 = 69600. The code gives 69600 (asserted exactly in the test, with every step start and end).
+- **Left / needs a decision:** nothing.
+- **Lessons:** when a packet can rest between hops, any "which hop am I on" lookup must handle gaps; the old fallback returned the last hop and would have teleported the packet at the end of the first rest.

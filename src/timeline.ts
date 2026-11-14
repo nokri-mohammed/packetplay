@@ -3,9 +3,11 @@ import { lane, laneId } from "./lanes.ts";
 import { routeStep } from "./route.ts";
 import type { Scene, Step } from "./types.generated.ts";
 
-export const HOP_MS = 800;
-export const FLOW_MS = 3000;
-export const STEP_GAP_MS = 400;
+export const HOP_MS = 1600;
+/** How long a packet rests at the node it has just reached. */
+export const NODE_DWELL_MS = 900;
+export const FLOW_MS = 6000;
+export const STEP_GAP_MS = 600;
 export const NEUTRAL_COLOR = "#6b7280";
 export const TRACK_COLORS: Record<string, string> = {
   blue: "#3b82f6",
@@ -94,7 +96,7 @@ function compileStep(
   const trackDef = track !== null ? scene.tracks?.[track] : undefined;
   const color = trackDef ? resolveColor(trackDef.color) : NEUTRAL_COLOR;
   const hopCount = path.length - 1;
-  const endMs = startMs + (mode === "flow" ? FLOW_MS : hopCount * HOP_MS);
+  const endMs = startMs + (mode === "flow" ? FLOW_MS : hopCount * (HOP_MS + NODE_DWELL_MS));
 
   const hops: HopTL[] = [];
   for (let i = 0; i < hopCount; i++) {
@@ -116,8 +118,8 @@ function compileStep(
       x2: fwd.x2,
       y2: fwd.y2,
       back: { link: rev.id, x1: rev.x1, y1: rev.y1, x2: rev.x2, y2: rev.y2 },
-      startMs: mode === "flow" ? startMs : startMs + i * HOP_MS,
-      endMs: mode === "flow" ? startMs + FLOW_MS : startMs + (i + 1) * HOP_MS,
+      startMs: mode === "flow" ? startMs : startMs + i * (HOP_MS + NODE_DWELL_MS),
+      endMs: mode === "flow" ? startMs + FLOW_MS : startMs + i * (HOP_MS + NODE_DWELL_MS) + HOP_MS,
       data,
     };
     const note = step.at?.[to]?.desc;

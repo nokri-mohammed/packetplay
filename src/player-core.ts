@@ -1,7 +1,7 @@
 import { HOP_MS, type HopTL, type StepTL, type Timeline } from "./timeline.ts";
 
 export const SPEEDS: readonly number[] = [0.5, 1, 1.5, 2];
-export const PULSE_MS = 500;
+export const PULSE_MS = 900;
 
 export interface Caption {
   chapterTitle: string;
@@ -58,15 +58,17 @@ function currentStep(tl: Timeline, t: number): StepTL | null {
   return active ?? done;
 }
 
-/** The hop a packet is on at time t, and how far along it is (0..1). */
+/** The hop a packet is on at time t, and how far along it is (0..1). While it rests at a node, f is 1. */
 function hopAt(step: StepTL, t: number): { index: number; hop: HopTL; f: number } | null {
-  const n = step.hops.length;
-  for (let i = 0; i < n; i++) {
-    const h = step.hops[i] as HopTL;
-    if (h.startMs <= t && t < h.endMs) return { index: i, hop: h, f: (t - h.startMs) / HOP_MS };
+  let found = -1;
+  for (let i = 0; i < step.hops.length; i++) {
+    if ((step.hops[i] as HopTL).startMs <= t) found = i;
   }
-  const last = step.hops[n - 1];
-  return last ? { index: n - 1, hop: last, f: 1 } : null;
+  if (found < 0) found = 0;
+  const hop = step.hops[found];
+  if (!hop) return null;
+  const f = Math.min(1, Math.max(0, (t - hop.startMs) / HOP_MS));
+  return { index: found, hop, f };
 }
 
 /** Everything that is visible at time t. */
