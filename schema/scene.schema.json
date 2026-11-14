@@ -128,7 +128,8 @@
           "minItems": 2,
           "maxItems": 2,
           "items": {
-            "type": "number"
+            "type": "number",
+            "minimum": 0
           }
         }
       }

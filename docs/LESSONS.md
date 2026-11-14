@@ -29,6 +29,14 @@
   (`fill="currentColor"` and so on). Player CSS lives in the HTML page around the SVG, never inside
   it. When a ticket and a frozen test disagree the test wins, so read the test regexes before
   writing structure advice. (T-20261114-10)
+- Schema bounds only reach the validator through the schema, so a one-line `minimum` plus a
+  `validateScene` test covers both layers. Write control characters in tests as `\u` escapes.
+  (T-20261114-12)
+- Never write the literal text `## Report` in a ticket body: an agent's edit of the Report section
+  matched it and overwrote the ticket (T-20261114-12, repaired by the manager). Refer to "the Report
+  section" in words instead.
+- CEO rule (2026-11-14): when the CEO says he will test the product himself, skip tester and
+  reviewer agents and browser automation. Keep only a small smoke test. (T-20261114-14)
 - The icon enum in `schema/scene.schema.json` is a static list. `test/schema.test.ts` fails if it
   drifts from `icons/isoflow/`. Update the schema and run `bun run gen:types` when icons change.
   (T-20261114-1)
