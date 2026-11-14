@@ -38,7 +38,7 @@ chapters:
       - { from: client, to: sig, track: signal, label: join room 42 }
 ```
 
-Four examples ship, each as YAML and as JSON:
+Five examples ship, each as YAML and as JSON:
 
 - [examples/webrtc.scene.yaml](examples/webrtc.scene.yaml): how a WebRTC call connects.
 - [examples/udp.scene.yaml](examples/udp.scene.yaml): how a UDP message travels (NAT rewriting the
@@ -47,13 +47,15 @@ Four examples ship, each as YAML and as JSON:
   lookup, TCP handshake, TLS handshake, then the HTTPS request).
 - [examples/osi.scene.yaml](examples/osi.scene.yaml): the OSI layers as a real computer uses them (browser, kernel, network card),
   and how a 4000-byte file travels down to bits and back up to a file.
+- [examples/homenet.scene.yaml](examples/homenet.scene.yaml): a home network with two switches and one router
+  (14 nodes, two LAN groups), with web, printing and same-switch traffic.
 
 ## CLI
 
 ```
 bun install
 bun run build:example          # writes dist/webrtc.html, open it in a browser
-bun run build:examples         # writes dist/webrtc.html, dist/udp.html, dist/website.html and dist/osi.html
+bun run build:examples         # writes dist/webrtc.html, dist/udp.html, dist/website.html, dist/osi.html and dist/homenet.html
 bun run src/cli.ts build <file> -o <out.html>
 bun run src/cli.ts convert <file> --to json|yaml
 ```

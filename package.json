@@ -11,7 +11,7 @@
     "gen:types": "bun run scripts/gen-types.ts",
     "render:example": "bun run scripts/render-example.ts",
     "build:example": "bun run src/cli.ts build examples/webrtc.scene.yaml -o dist/webrtc.html",
-    "build:examples": "bun run src/cli.ts build examples/webrtc.scene.yaml -o dist/webrtc.html && bun run src/cli.ts build examples/udp.scene.yaml -o dist/udp.html && bun run src/cli.ts build examples/website.scene.yaml -o dist/website.html && bun run src/cli.ts build examples/osi.scene.yaml -o dist/osi.html",
+    "build:examples": "bun run src/cli.ts build examples/webrtc.scene.yaml -o dist/webrtc.html && bun run src/cli.ts build examples/udp.scene.yaml -o dist/udp.html && bun run src/cli.ts build examples/website.scene.yaml -o dist/website.html && bun run src/cli.ts build examples/osi.scene.yaml -o dist/osi.html && bun run src/cli.ts build examples/homenet.scene.yaml -o dist/homenet.html",
     "cli": "bun run src/cli.ts"
   },
   "dependencies": {
