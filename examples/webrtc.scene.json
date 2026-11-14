@@ -1,0 +1,172 @@
+{
+  "title": "How a WebRTC call connects",
+  "nodes": {
+    "client": {
+      "label": "Your laptop",
+      "icon": "laptop"
+    },
+    "r1": {
+      "label": "Your router",
+      "icon": "router",
+      "sub": "NAT"
+    },
+    "net": {
+      "label": "Internet",
+      "icon": "cloud"
+    },
+    "stun": {
+      "label": "STUN server",
+      "icon": "server"
+    },
+    "sig": {
+      "label": "call.example.com",
+      "icon": "server",
+      "sub": "signaling"
+    },
+    "r2": {
+      "label": "Sam's router",
+      "icon": "router",
+      "group": "sams-home"
+    },
+    "sam": {
+      "label": "Sam's laptop",
+      "icon": "laptop",
+      "group": "sams-home"
+    }
+  },
+  "groups": {
+    "sams-home": {
+      "label": "Sam's home"
+    }
+  },
+  "links": [
+    [
+      "client",
+      "r1"
+    ],
+    [
+      "r1",
+      "net"
+    ],
+    [
+      "net",
+      "stun"
+    ],
+    [
+      "net",
+      "sig"
+    ],
+    [
+      "net",
+      "r2"
+    ],
+    [
+      "r2",
+      "sam"
+    ]
+  ],
+  "tracks": {
+    "signal": {
+      "label": "Signaling",
+      "color": "blue"
+    },
+    "stun": {
+      "label": "STUN",
+      "color": "orange"
+    },
+    "media": {
+      "label": "Media (direct)",
+      "color": "green"
+    }
+  },
+  "chapters": [
+    {
+      "title": "1. Join the room",
+      "steps": [
+        {
+          "from": "client",
+          "to": "sig",
+          "track": "signal",
+          "label": "join room 42",
+          "desc": "Sent over a WebSocket to the signaling server",
+          "data": {
+            "room": 42
+          }
+        },
+        {
+          "from": "sig",
+          "to": "client",
+          "track": "signal",
+          "label": "joined, waiting for Sam"
+        }
+      ]
+    },
+    {
+      "title": "2. What is my public address?",
+      "steps": [
+        {
+          "from": "client",
+          "to": "stun",
+          "track": "stun",
+          "label": "Binding request",
+          "data": {
+            "from": "192.0.2.20:5000"
+          },
+          "at": {
+            "r1": {
+              "set": {
+                "from": "203.0.113.7:54321"
+              },
+              "desc": "Your router swaps your private address for its public one (NAT)"
+            }
+          }
+        },
+        {
+          "from": "stun",
+          "to": "client",
+          "track": "stun",
+          "label": "You are 203.0.113.7:54321"
+        }
+      ]
+    },
+    {
+      "title": "3. Offer and answer",
+      "steps": [
+        {
+          "from": "client",
+          "to": "sam",
+          "via": [
+            "sig"
+          ],
+          "track": "signal",
+          "label": "offer (SDP)",
+          "data": {
+            "candidate": "203.0.113.7:54321"
+          }
+        },
+        {
+          "from": "sam",
+          "to": "client",
+          "via": [
+            "sig"
+          ],
+          "track": "signal",
+          "label": "answer (SDP)"
+        }
+      ]
+    },
+    {
+      "title": "4. The call",
+      "steps": [
+        {
+          "from": "client",
+          "to": "sam",
+          "track": "media",
+          "label": "audio + video",
+          "mode": "flow",
+          "both": true
+        }
+      ]
+    }
+  ]
+}
