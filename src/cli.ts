@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
 import { stringify as toYaml } from "yaml";
 import { iconNames } from "./icons.ts";
+import { ExportUsageError, exportVideo, parseExportArgs } from "./export.ts";
 import { loadScene } from "./load.ts";
 import { buildHtml } from "./page.ts";
 import { validateScene } from "./validate.ts";
@@ -12,12 +13,16 @@ const USAGE = `Usage:
   packetplay build <file> [-o <out.html>] [--json]
   packetplay validate <file> [--json]
   packetplay convert <file> --to json|yaml [-o <out>]
+  packetplay export <file> -o <out.mp4|out.gif> [--format mp4|gif] [--fps N] [--speed X]
+                   [--width PX] [--from SEC] [--to SEC] [--scale X]
   packetplay icons
   packetplay --help
 
 build     Turn a scene file (.yaml, .yml or .json) into one self-contained HTML page.
 validate  Check a scene file and write no HTML.
 convert   Write the same scene as JSON or YAML (stdout when no -o is given).
+export    Render the animation to an MP4 or GIF, frame by frame (needs Chrome and ffmpeg).
+          Defaults: 30 fps (gif 15), speed 1, width 1280 (16:9), scale 1.
 icons     List the icon names a scene can use, one per line.
 --json    With build or validate, print one JSON object instead of text.
 `;
@@ -120,6 +125,19 @@ async function main(argv: string[]): Promise<number> {
       const steps = countSteps(scene);
       if (a.json) console.log(JSON.stringify({ ok: true, title: scene.title, nodes, steps }));
       else console.log(`ok: ${scene.title} (${nodes} nodes, ${steps} steps)`);
+      return 0;
+    }
+    if (cmd === "export") {
+      let o;
+      try {
+        o = parseExportArgs(rest);
+      } catch (e) {
+        if (e instanceof ExportUsageError) throw new UsageError(e.message);
+        throw e;
+      }
+      const html = await buildHtml(await loadValid(o.file));
+      const r = await exportVideo(html, o);
+      console.log(`Wrote ${r.out} (${r.bytes} bytes, ${r.frames} frames)`);
       return 0;
     }
     if (cmd === "icons") {

@@ -21,6 +21,10 @@ Bun. The skill directory is the folder that holds this `SKILL.md`; the tool is t
 
 Other commands: `packetplay.js icons` lists the allowed icon names, one per line.
 
+Optional: `bun <skill dir>/packetplay.js export <name>.scene.yaml -o <name>.mp4` (or `.gif`) renders
+a video. It needs Chrome (lightest: chrome-headless-shell; no npm browser package) and ffmpeg installed; it can take a minute or two. Options:
+`--fps`, `--speed`, `--width`, `--from`, `--to` (seconds), `--scale`.
+
 ## Scene format
 
 ```yaml

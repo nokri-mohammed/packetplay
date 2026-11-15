@@ -737,6 +737,17 @@ new ResizeObserver(() => {
   if (measure()) applyView();
 }).observe(stage);
 
+// ---------------------------------------------------------------- export hook
+
+// `packetplay export` drives the page through this: seek to a real time in ms (1x speed), paused.
+(window as unknown as { __packetplay: unknown }).__packetplay = {
+  durationMs: tl.totalMs,
+  seek: (ms: number) => {
+    timer.pause();
+    seekClock(clockFromReal(ms));
+  },
+};
+
 // ---------------------------------------------------------------- start
 
 fit();

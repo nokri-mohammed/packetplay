@@ -67,6 +67,10 @@ button{font:inherit;color:var(--fg);background:transparent;border:0;cursor:point
 .speeds button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:var(--knob)}
 button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .bar:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+html.export main{max-width:none;height:100vh;padding:8px 12px;display:flex;flex-direction:column}
+html.export .stage{flex:1 1 0;height:auto;min-height:0}
+html.export .zoombar,html.export .controls{display:none}
+html.export .caption{flex:none}
 @media (max-width:640px){.bar{flex-basis:100%;order:5}.speeds{margin-left:auto}}
 @media (prefers-reduced-motion: reduce){button{transition:none}.icon:hover,.icon:active,.speeds button:active{transform:none}}
 `;
@@ -117,6 +121,7 @@ export async function buildHtml(scene: Scene): Promise<string> {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>${title}</title>
+<script>if(location.hash==="#export")document.documentElement.classList.add("export")</script>
 <style>${CSS}</style>
 </head>
 <body>

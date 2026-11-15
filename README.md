@@ -130,8 +130,17 @@ Five examples ship, each as YAML and as JSON, and each is also a good pattern to
 bun run src/cli.ts build <file> -o <out.html>   # scene to one HTML page
 bun run src/cli.ts validate <file> [--json]     # check a scene, write no HTML
 bun run src/cli.ts convert <file> --to json|yaml
+bun run src/cli.ts export <file> -o <out.mp4|out.gif>   # render a video or GIF
 bun run src/cli.ts icons                         # list the icon names
 ```
+
+`export` is optional and needs a local Chrome and `ffmpeg` on your machine (nothing is bundled and no
+npm browser package is needed). The lightest install is chrome-headless-shell; Chrome and Chromium work too. It seeks the page frame by frame, so the result is deterministic. Controls and zoom pills
+are hidden; the title, caption and legend stay. Options: `--format mp4|gif` (from the file extension
+by default), `--fps` (30, GIF 15), `--speed` (1), `--width` (1280, height is 16:9), `--from` and
+`--to` in seconds of scene time, `--scale` for device pixel ratio (1). Chrome is found through
+`CHROME_PATH`, then `chrome-headless-shell` (PATH, then `~/.cache/ms-playwright/chromium_headless_shell-*`),
+then `google-chrome`, `chromium`, `chromium-browser`, then `~/.cache/ms-playwright/chromium-*`. MP4 is H.264 `yuv420p`; GIF uses a two-pass palette and loops.
 
 `validate` prints `ok: <title> (N nodes, M steps)` and exits 0, or prints each problem and exits 1.
 With `--json` (on `validate` and `build`) the result is one JSON object:
