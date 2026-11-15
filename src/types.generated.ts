@@ -85,6 +85,8 @@ export interface Node {
     | "firewall"
     | "function-module"
     | "image"
+    | "kernel-ip"
+    | "kernel-tcp"
     | "laptop"
     | "loadbalancer"
     | "lock"

@@ -105,7 +105,7 @@ chapters:
 
 | Part | What it is |
 |---|---|
-| `nodes` | The boxes: an `icon` (40 built in), a `label`, an optional `sub` line, an optional `at: [i, j]` position and `group`. |
+| `nodes` | The boxes: an `icon` (42 built in), a `label`, an optional `sub` line, an optional `at: [i, j]` position and `group`. |
 | `links` | Which nodes are connected. A step finds its own route across them. |
 | `tracks` | Colours and names for kinds of traffic. |
 | `chapters` and `steps` | The story. A step sends a message `from` a node `to` a node, with a `label`, a `desc` and `data`. |

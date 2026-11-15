@@ -81,6 +81,13 @@ class Icon:
         if hole:
             self.poly([P(u, v, w1) for u, v in hole], BLACK, False)
 
+    def arrow(self, w, u0, u1, v, width, fill, head=1.6, stroke=False):
+        """Flat arrow on the plane w, along u from u0 to u1 (either direction), centred on v."""
+        d = 1 if u1 > u0 else -1
+        a, h = width / 2, u1 - d * head
+        pts = [(u0, v - a), (h, v - a), (h, v - a * 2.2), (u1, v), (h, v + a * 2.2), (h, v + a), (u0, v + a)]
+        self.poly([P(u, vv, w) for u, vv in pts], fill, stroke)
+
     def shadow(self, u0, u1, v0, v1, w=-0.2):
         self.poly([P(u0, v0, w), P(u1, v0, w), P(u1, v1, w), P(u0, v1, w)], "#000000", False, 0.15)
 
