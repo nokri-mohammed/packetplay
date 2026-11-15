@@ -32,6 +32,7 @@ import {
   type Frame,
   type Jump,
 } from "./player-core.ts";
+import { FOLLOW_ZOOM, cameraTarget } from "./camera.ts";
 import { FLOW_MS, TYPE_CHAR_MS, type StepTL, type Timeline } from "./timeline.ts";
 
 const DWELL_MS = 2000; // reduced motion: time spent on each step
@@ -127,6 +128,43 @@ function zoomBy(px: number, py: number, factor: number): void {
   tx = px - wx * nz;
   ty = py - wy * nz;
   zoom = nz;
+}
+
+// ---------------------------------------------------------------- follow camera
+
+// While `following`, every render puts the camera target (a pure function of the clock, see camera.ts) at
+// the stage centre. There is no easing state: seeking, scrubbing and export all see the same view.
+let following = false;
+let followedYet = false;
+let viewClock = 0;
+const followBtn = document.getElementById("zoom-follow");
+
+function followView(): void {
+  if (!following || sw <= 0 || sh <= 0) return;
+  let p: { x: number; y: number } | undefined;
+  if (reduced) {
+    const s = tl.steps[Math.max(0, Math.min(nSteps - 1, Math.floor(viewClock / DWELL_MS)))];
+    const last = s?.hops[s.hops.length - 1];
+    p = last ? nodePos.get(last.to) : undefined;
+  } else {
+    p = cameraTarget(tl, nodePos, viewClock);
+  }
+  if (!p) return;
+  tx = sw / 2 - zoom * p.x;
+  ty = sh / 2 - zoom * p.y;
+  applyView();
+}
+
+function setFollow(on: boolean): void {
+  following = on;
+  followBtn?.setAttribute("aria-pressed", String(on));
+  if (on) {
+    if (!followedYet) {
+      followedYet = true;
+      zoom = Math.max(zoom, clampZoom(FOLLOW_ZOOM));
+    }
+    followView();
+  }
 }
 
 // ---------------------------------------------------------------- overlay
@@ -525,6 +563,8 @@ let lastClock = 0;
 let ticking = false;
 
 function render(c: number): void {
+  viewClock = reduced ? c : realFromClock(c);
+  followView();
   const f = reduced ? reducedFrame(c) : frameAt(tl, c);
   if (reduced) {
     const i = Math.max(0, Math.min(nSteps - 1, Math.floor(c / DWELL_MS)));
@@ -610,6 +650,7 @@ function act(a: Action): void {
     case "faster": return setSpeed(stepSpeed(speed, 1));
     case "slower": return setSpeed(stepSpeed(speed, -1));
     case "restart": return seekClock(0);
+    case "follow": return setFollow(!following);
   }
 }
 
@@ -708,9 +749,10 @@ stage.addEventListener(
   "wheel",
   (e) => {
     e.preventDefault();
-    const p = rel(e);
+    const p = following ? { x: sw / 2, y: sh / 2 } : rel(e);
     zoomBy(p.x, p.y, e.deltaY < 0 ? 1.1 : 1 / 1.1);
     applyView();
+    followView();
   },
   { passive: false },
 );
@@ -729,6 +771,7 @@ stage.addEventListener("pointermove", (e) => {
   const cur = rel(e);
   pointers.set(e.pointerId, cur);
   if (pointers.size === 1) {
+    if (following && (cur.x !== prev.x || cur.y !== prev.y)) setFollow(false); // a drag takes the camera back
     tx += cur.x - prev.x;
     ty += cur.y - prev.y;
   } else if (pointers.size === 2) {
@@ -739,11 +782,16 @@ stage.addEventListener("pointermove", (e) => {
     const d1 = Math.hypot(b1.x - a1.x, b1.y - a1.y);
     const m0 = { x: (a0.x + b0.x) / 2, y: (a0.y + b0.y) / 2 };
     const m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 };
-    if (d0 > 0) zoomBy(m0.x, m0.y, d1 / d0);
-    tx += m1.x - m0.x;
-    ty += m1.y - m0.y;
+    if (following) {
+      if (d0 > 0) zoomBy(sw / 2, sh / 2, d1 / d0);
+    } else {
+      if (d0 > 0) zoomBy(m0.x, m0.y, d1 / d0);
+      tx += m1.x - m0.x;
+      ty += m1.y - m0.y;
+    }
   }
   applyView();
+  followView();
 });
 const endPointer = (e: PointerEvent) => {
   pointers.delete(e.pointerId);
@@ -755,24 +803,41 @@ stage.addEventListener("pointercancel", endPointer);
 $<HTMLButtonElement>("zoom-in").addEventListener("click", () => {
   zoomBy(sw / 2, sh / 2, 1.25);
   applyView();
+  followView();
 });
 $<HTMLButtonElement>("zoom-out").addEventListener("click", () => {
   zoomBy(sw / 2, sh / 2, 0.8);
   applyView();
+  followView();
 });
-$<HTMLButtonElement>("zoom-fit").addEventListener("click", fit);
+$<HTMLButtonElement>("zoom-fit").addEventListener("click", () => {
+  setFollow(false);
+  fit();
+});
+followBtn?.addEventListener("click", () => setFollow(!following));
 new ResizeObserver(() => {
-  if (measure()) applyView();
+  if (measure()) {
+    applyView();
+    followView();
+  }
 }).observe(stage);
 
 // ---------------------------------------------------------------- export hook
 
 // `packetplay export` drives the page through this: seek to a real time in ms (1x speed), paused.
+// setFollow(true, zoom) switches the follow camera on at an explicit zoom.
 (window as unknown as { __packetplay: unknown }).__packetplay = {
   durationMs: tl.totalMs,
   seek: (ms: number) => {
     timer.pause();
     seekClock(clockFromReal(ms));
+  },
+  setFollow: (on: boolean, z?: number) => {
+    followedYet = true;
+    if (on && z !== undefined) zoom = clampZoom(z);
+    setFollow(on);
+    applyView();
+    followView();
   },
 };
 

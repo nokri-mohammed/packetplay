@@ -23,7 +23,9 @@ Other commands: `packetplay.js icons` lists the allowed icon names, one per line
 
 Optional: `bun <skill dir>/packetplay.js export <name>.scene.yaml -o <name>.mp4` (or `.gif`) renders
 a video. It needs Chrome (lightest: chrome-headless-shell; no npm browser package) and ffmpeg installed; it can take a minute or two. Options:
-`--fps`, `--speed`, `--width`, `--from`, `--to` (seconds), `--scale`.
+`--fps`, `--speed`, `--width`, `--from`, `--to` (seconds), `--scale`, `--follow` with optional `--zoom N`.
+For big scenes (a wide canvas whose fitted view is unreadable) use `--follow`: the camera keeps the
+packet at the centre at readable zoom. In the page the same thing is the Follow pill or the F key.
 
 ## Scene format
 
@@ -94,4 +96,4 @@ Copy the closest one from `<skill dir>/examples/` and edit it:
 
 Open the HTML file in a browser. Controls: Play or Pause, Restart, speeds 0.5x to 2x, a clickable
 timeline, and zoom (mouse wheel or pinch) and pan (drag). Keys: Space play or pause, Left and Right
-hop, N and P message, [ and ] chapter, + and - speed, Home restart.
+hop, N and P message, [ and ] chapter, + and - speed, Home restart, F follow camera.

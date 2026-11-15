@@ -15,6 +15,7 @@ const USAGE = `Usage:
   packetplay convert <file> --to json|yaml [-o <out>]
   packetplay export <file> -o <out.mp4|out.gif> [--format mp4|gif] [--fps N] [--speed X]
                    [--width PX] [--from SEC] [--to SEC] [--scale X]
+                   [--follow [--zoom N]]
   packetplay icons
   packetplay --help
 
@@ -23,6 +24,7 @@ validate  Check a scene file and write no HTML.
 convert   Write the same scene as JSON or YAML (stdout when no -o is given).
 export    Render the animation to an MP4 or GIF, frame by frame (needs Chrome and ffmpeg).
           Defaults: 30 fps (gif 15), speed 1, width 1280 (16:9), scale 1.
+          --follow keeps the packet at the centre of the frame at zoom N (default 1).
 icons     List the icon names a scene can use, one per line.
 --json    With build or validate, print one JSON object instead of text.
 `;

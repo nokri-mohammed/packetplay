@@ -15,12 +15,18 @@ import {
 describe("parseExportArgs", () => {
   test("infers the format from the extension and applies defaults", () => {
     const o = parseExportArgs(["a.yaml", "-o", "x.mp4"]);
-    expect(o).toEqual({ file: "a.yaml", out: "x.mp4", format: "mp4", fps: 30, speed: 1, width: 1280, from: 0, to: undefined, scale: 1 });
+    expect(o).toEqual({ file: "a.yaml", out: "x.mp4", format: "mp4", fps: 30, speed: 1, width: 1280, from: 0, to: undefined, scale: 1, follow: false, zoom: 1 });
     expect(parseExportArgs(["a.yaml", "-o", "x.GIF"])).toMatchObject({ format: "gif", fps: 15 });
   });
   test("--format wins over the extension; options parse", () => {
     const o = parseExportArgs(["a.yaml", "-o", "x.bin", "--format", "gif", "--fps", "10", "--speed", "2", "--width", "800", "--from", "1", "--to", "4.5", "--scale", "2"]);
     expect(o).toMatchObject({ format: "gif", fps: 10, speed: 2, width: 800, from: 1, to: 4.5, scale: 2 });
+  });
+  test("--follow and --zoom", () => {
+    expect(parseExportArgs(["a.yaml", "-o", "x.mp4", "--follow"])).toMatchObject({ follow: true, zoom: 1 });
+    expect(parseExportArgs(["a.yaml", "-o", "x.mp4", "--follow", "--zoom", "0.8"])).toMatchObject({ follow: true, zoom: 0.8 });
+    expect(() => parseExportArgs(["a.yaml", "-o", "x.mp4", "--zoom", "1"])).toThrow(ExportUsageError);
+    expect(() => parseExportArgs(["a.yaml", "-o", "x.mp4", "--follow", "--zoom", "5"])).toThrow(ExportUsageError);
   });
   test("rejects bad input", () => {
     const bad = (a: string[]) => expect(() => parseExportArgs(a)).toThrow(ExportUsageError);

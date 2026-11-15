@@ -448,7 +448,8 @@ export type Action =
   | "prevChapter"
   | "faster"
   | "slower"
-  | "restart";
+  | "restart"
+  | "follow";
 
 const KEYS: Record<string, Action> = {
   " ": "toggle",
@@ -462,6 +463,8 @@ const KEYS: Record<string, Action> = {
   "=": "faster",
   "-": "slower",
   Home: "restart",
+  f: "follow",
+  F: "follow",
 };
 
 export function keyAction(key: string): Action | null {

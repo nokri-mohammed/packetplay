@@ -20,6 +20,10 @@ export interface ExportOptions {
   from: number; // seconds of scene time
   to: number | undefined; // seconds of scene time, undefined = the end
   scale: number;
+  /** Render with the camera following the packet. */
+  follow: boolean;
+  /** Zoom of the follow camera (only with follow). */
+  zoom: number;
 }
 
 const num = (name: string, v: string | undefined): number => {
@@ -45,6 +49,8 @@ export function parseExportArgs(args: string[]): ExportOptions {
   let from = 0;
   let to: number | undefined;
   let scale = 1;
+  let follow = false;
+  let zoom: number | undefined;
   for (let i = 0; i < args.length; i++) {
     const a = args[i] as string;
     const next = () => args[++i];
@@ -60,6 +66,8 @@ export function parseExportArgs(args: string[]): ExportOptions {
     else if (a === "--from") from = num(a, next());
     else if (a === "--to") to = num(a, next());
     else if (a === "--scale") scale = num(a, next());
+    else if (a === "--follow") follow = true;
+    else if (a === "--zoom") zoom = num(a, next());
     else if (a.startsWith("-")) throw new ExportUsageError(`unknown option ${a}`);
     else positional.push(a);
   }
@@ -75,7 +83,9 @@ export function parseExportArgs(args: string[]): ExportOptions {
   if (!(from >= 0)) throw new ExportUsageError("--from must be 0 or more");
   if (to !== undefined && !(to > from)) throw new ExportUsageError("--to must be greater than --from");
   if (!(scale >= 0.5 && scale <= 4)) throw new ExportUsageError("--scale must be between 0.5 and 4");
-  return { file: positional[0] as string, out, format: fmt, fps: f, speed, width, from, to, scale };
+  if (zoom !== undefined && !follow) throw new ExportUsageError("--zoom needs --follow");
+  if (zoom !== undefined && !(zoom >= 0.2 && zoom <= 1.6)) throw new ExportUsageError("--zoom must be between 0.2 and 1.6");
+  return { file: positional[0] as string, out, format: fmt, fps: f, speed, width, from, to, scale, follow, zoom: zoom ?? 1 };
 }
 
 /** Viewport height in CSS pixels for a 16:9 frame, rounded to an even number. */
@@ -362,6 +372,9 @@ export async function exportVideo(html: string, opts: ExportOptions): Promise<Ex
     }
     if (durationMs <= 0) throw new Error("the page did not expose window.__packetplay");
 
+    if (opts.follow) {
+      await cdp.send("Runtime.evaluate", { expression: `window.__packetplay.setFollow(true, ${opts.zoom})`, returnByValue: true });
+    }
     const plan = planFrames(durationMs, opts);
     const pattern = join(work, "f%06d.png");
     if (opts.format === "mp4") {

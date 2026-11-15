@@ -33,6 +33,7 @@ h1{font-size:1.25rem;font-weight:600;margin:0 0 8px}
 .zoombar{position:absolute;left:10px;top:10px;display:flex;gap:2px;align-items:center;padding:2px;background:var(--panel);border-radius:var(--r-full);box-shadow:var(--knob);cursor:default}
 .zoombar button{min-height:32px;min-width:32px;padding:0 10px;background:transparent;border-radius:var(--r-full);font-size:.85rem}
 .zoombar button:hover{background:var(--fill)}
+.zoombar button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:var(--knob)}
 #zoom-label{min-width:3.2em;text-align:center;font-size:.8rem;color:var(--muted)}
 .stage svg .group-label{font-size:calc(14px * var(--ts-group,1))}.stage svg .sub{font-size:calc(12px * var(--ts-sub,1))}.stage svg .label{font-size:calc(15px * var(--ts-label,1))}.stage svg .label{transform:translateY(calc((var(--ts-label,1) - 1) * 11px))}.stage svg .sub{opacity:var(--sub-op,1);transition:opacity .15s;transform:translateY(calc((var(--ts-label,1) - 1) * 11px + (var(--ts-sub,1) - 1) * 9px))}
 .pk-bg{fill:var(--card-bg);stroke-width:1.5}
@@ -83,7 +84,7 @@ const PAUSE_ICON = ICON("i-pause", '<rect x="6" y="5" width="4.2" height="14" rx
 const RESTART_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5v4.6h4.6"/></svg>';
 const KEYS_HINT =
-  "Shortcuts: Space play or pause, Left and Right hop, N and P message, [ and ] chapter, + and - speed, Home restart";
+  "Shortcuts: Space play or pause, Left and Right hop, N and P message, [ and ] chapter, + and - speed, Home restart, F follow camera";
 
 /** Build one self-contained HTML page (inline CSS, SVG, timeline JSON and player bundle). */
 export async function buildHtml(scene: Scene): Promise<string> {
@@ -135,6 +136,7 @@ ${svg}<div class="zoombar" role="group" aria-label="Zoom">
 <span id="zoom-label" aria-live="off">100%</span>
 <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
 <button type="button" id="zoom-fit">Fit</button>
+<button type="button" id="zoom-follow" aria-pressed="false" aria-keyshortcuts="F" title="Follow the packet (F)">Follow</button>
 </div>
 </div>
 <section class="caption" aria-live="polite" aria-label="Caption">
@@ -146,7 +148,7 @@ ${svg}<div class="zoombar" role="group" aria-label="Zoom">
 </section>
 <ul class="legend" id="legend" aria-label="Legend"></ul>
 <div class="controls" role="group" aria-label="Playback controls">
-<button type="button" class="icon" id="btn-play" data-state="paused" aria-label="Play" aria-keyshortcuts="Space ArrowLeft ArrowRight N P [ ] + - Home" title="${KEYS_HINT}">${PLAY_ICON}${PAUSE_ICON}</button>
+<button type="button" class="icon" id="btn-play" data-state="paused" aria-label="Play" aria-keyshortcuts="Space ArrowLeft ArrowRight N P [ ] + - Home F" title="${KEYS_HINT}">${PLAY_ICON}${PAUSE_ICON}</button>
 <button type="button" class="icon" id="btn-restart" aria-label="Restart" title="Restart (Home)">${RESTART_ICON}</button>
 <div class="bar" id="bar" role="slider" tabindex="0" aria-label="Timeline"></div>
 <span class="speeds" role="group" aria-label="Speed">${speeds}</span>

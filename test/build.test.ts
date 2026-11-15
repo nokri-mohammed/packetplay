@@ -256,7 +256,8 @@ describe("buildHtml compact controls", () => {
     expect(doc).toContain('id="btn-restart"');
     const speeds = [...doc.matchAll(/data-speed="([^"]+)" aria-pressed="([^"]+)"/g)].map((m) => [m[1], m[2]]);
     expect(speeds).toEqual([["0.5", "false"], ["1", "true"], ["1.5", "false"], ["2", "false"]]);
-    for (const id of ["zoom-in", "zoom-out", "zoom-fit"]) expect(doc).toContain(`id="${id}"`);
+    for (const id of ["zoom-in", "zoom-out", "zoom-fit", "zoom-follow"]) expect(doc).toContain(`id="${id}"`);
+    expect(doc).toMatch(/id="zoom-follow" aria-pressed="false"/);
     expect(doc).not.toMatch(/id="btn-(prev|next)-/);
     expect(doc).not.toContain("Keys:");
     expect(doc).toContain('aria-keyshortcuts="Space');
@@ -267,7 +268,7 @@ describe("buildHtml compact controls", () => {
     expect(src).toContain("keyAction(e.key)");
     expect(src).toContain("document.getElementById(id)?.addEventListener");
     const core = readFileSync(root + "src/player-core.ts", "utf8");
-    for (const a of ["toggle", "nextHop", "prevHop", "nextMessage", "prevMessage", "nextChapter", "prevChapter", "faster", "slower", "restart"]) {
+    for (const a of ["toggle", "nextHop", "prevHop", "nextMessage", "prevMessage", "nextChapter", "prevChapter", "faster", "slower", "restart", "follow"]) {
       expect(core).toContain(`"${a}"`);
     }
   });
