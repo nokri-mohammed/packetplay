@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/nokri-mohammed/packetplay/compare/v0.10.0...v0.11.0) (2026-11-15)
+
+
+### Features
+
+* **player:** follow camera that keeps the packet centred, with export --follow ([0964cf0](https://github.com/nokri-mohammed/packetplay/commit/0964cf0bc420a41a71125334274348f3783cee8d))
+
+
+### Bug Fixes
+
+* **export:** write to a partial file and rename on success so an interrupted export leaves no broken video ([fded9f0](https://github.com/nokri-mohammed/packetplay/commit/fded9f080be7ab939b70e80281dd488291943144))
+* **player:** gentler minimum text size, hide subtitles when zoomed far out, typing bubble avoids group labels ([32607fb](https://github.com/nokri-mohammed/packetplay/commit/32607fb0f9afa128c09f50164848f92538adfdf7))
+* **player:** keep data cards off group labels and keep small text readable when zoomed out ([9fae374](https://github.com/nokri-mohammed/packetplay/commit/9fae374a110be03eceda213f96a8f56ca3265977))
+
 ## [0.10.0](https://github.com/nokri-mohammed/packetplay/compare/v0.9.0...v0.10.0) (2026-11-15)
 
 

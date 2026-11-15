@@ -1,6 +1,6 @@
 {
   "name": "packetplay",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Describe a system in YAML or JSON, get one self-contained animated HTML page.",
   "license": "MIT",
   "type": "module",

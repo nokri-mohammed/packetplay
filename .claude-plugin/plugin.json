@@ -1,6 +1,6 @@
 {
   "name": "packetplay",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Turn a YAML or JSON scene into one animated, self-contained HTML diagram of how packets, requests and files travel. Includes a skill that writes, validates and builds scenes.",
   "author": {
     "name": "nokri-mohammed"
