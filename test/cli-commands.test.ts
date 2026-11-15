@@ -130,7 +130,7 @@ describe("cli build --json", () => {
 });
 
 describe("cli icons", () => {
-  test("prints the 37 icon names sorted, one per line", async () => {
+  test("prints the 38 icon names sorted, one per line", async () => {
     const { out, code } = await run(["icons"]);
     expect(code).toBe(0);
     const names = out.trimEnd().split("\n");
@@ -139,7 +139,7 @@ describe("cli icons", () => {
       .map((f) => f.slice(0, -4))
       .sort();
     expect(names).toEqual(files);
-    expect(names.length).toBe(37);
+    expect(names.length).toBe(38);
     expect(out.endsWith("\n")).toBe(true);
   });
 

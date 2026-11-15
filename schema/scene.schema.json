@@ -108,6 +108,7 @@
             "mail",
             "mailmultiple",
             "mobiledevice",
+            "nic",
             "office",
             "package-module",
             "paymentcard",

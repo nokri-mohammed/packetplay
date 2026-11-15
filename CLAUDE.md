@@ -17,5 +17,5 @@
 - Releases run through the release-please pull request (see README, Releasing). Merging that pull request
   is the release, so the manager merges it only after the CEO says to. Use Conventional Commit types
   correctly (`feat`, `fix`, `feat!`), because they decide the version and the changelog.
-- Only the isoflow icons are vendored (MIT). Do not add other icon packs.
+- Only the isoflow icons are vendored (MIT). Do not add other icon packs. Own icons drawn in the isoflow style are allowed (CEO, 2026-11-15; `nic.svg`).
 - The team-wide rules in `homelab-team-all/CLAUDE.md` apply.
