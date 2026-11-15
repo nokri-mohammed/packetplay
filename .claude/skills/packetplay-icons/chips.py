@@ -52,7 +52,41 @@ def fpga():
     return i
 
 
+def diode(i, w, u, v0, v1, half, toward_v_plus, fill):
+    """A diode symbol lying flat on plane w: centre line at u, from v0 to v1, triangle plus bar.
+    Screen-left is +v, so toward_v_plus=True points the diode to the left."""
+    mid, ln = (v0 + v1) / 2, 0.95 * half                    # half the triangle length
+    a, b = (mid - ln, mid + ln) if toward_v_plus else (mid + ln, mid - ln)           # base, apex
+    i.top(w, u - 0.25, u + 0.25, v0, v1, BLACK)                                       # leads
+    i.poly([P(u - half, a, w), P(u + half, a, w), P(u, b, w)], fill, True)            # triangle
+    bar = b + (0.6 if toward_v_plus else -0.6)
+    i.top(w, u - half - 0.2, u + half + 0.2, min(b, bar), max(b, bar), BLACK)        # bar
+
+
+def fpga_diode():
+    """The FPGA with two diode symbols on the die: one in the middle pointing left, one at the front
+    pointing the opposite way (right)."""
+    i = Icon()
+    i.shadow(-0.8, N + 2.4, -0.8, N + 2.4)
+    for k in range(12):
+        c = 1.0 + k * 1.1
+        i.box(N, N + 1.0, c, c + 0.4, 0.2, 0.7, TOP, SIDE_L, SIDE_R, False)
+        i.box(c, c + 0.4, N, N + 1.0, 0.2, 0.7, TOP, SIDE_L, SIDE_R, False)
+    i.box(0, N, 0, N, 0, 1.6, SUB_T, SUB_L, SUB_R)
+    w = 1.6
+    i.top(w, 1.5, N - 1.5, 1.5, N - 1.5, WHITE, True)
+    t, g, o = 2.3, 0.7, 1.8
+    col = {"L": SIDE_L, "B": BLUE, "Y": YELLOW}
+    for c, ch in enumerate("LBLY"):                          # back row of logic blocks only
+        v = o + c * (t + g)
+        i.top(w, o, o + t, v, v + t, col[ch])
+    diode(i, w, 7.2, 2.3, 12.2, 1.9, True, "#8FB8F0")       # middle, points left
+    diode(i, w, 11.7, 2.3, 12.2, 1.2, False, YELLOW)        # front, points right
+    return i
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     cpu().save(os.path.join(out, "cpu.svg"))
     fpga().save(os.path.join(out, "fpga.svg"))
+    fpga_diode().save(os.path.join(out, "fpga-diode.svg"))

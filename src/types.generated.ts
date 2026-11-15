@@ -85,6 +85,7 @@ export interface Node {
     | "document"
     | "firewall"
     | "fpga"
+    | "fpga-diode"
     | "function-module"
     | "image"
     | "kernel-ip"
