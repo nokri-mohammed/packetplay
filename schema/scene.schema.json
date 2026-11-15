@@ -90,6 +90,7 @@
           "type": "string",
           "enum": [
             "block",
+            "browser",
             "cache",
             "cardterminal",
             "cloud",

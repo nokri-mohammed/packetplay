@@ -72,6 +72,7 @@ export interface Node {
    */
   icon:
     | "block"
+    | "browser"
     | "cache"
     | "cardterminal"
     | "cloud"
