@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.10.0](https://github.com/nokri-mohammed/packetplay/compare/v0.9.0...v0.10.0) (2026-11-15)
+
+
+### Features
+
+* **export:** render the animation to MP4 or GIF ([72da254](https://github.com/nokri-mohammed/packetplay/commit/72da25410a0734beddb0bb059c4418623124e1e0))
+* **icons:** add a browser icon ([7abb0de](https://github.com/nokri-mohammed/packetplay/commit/7abb0ded16d2e5458814bc468c39eb3f2baa9155))
+* **icons:** add a network card icon (nic) in the isoflow style ([56f7c0d](https://github.com/nokri-mohammed/packetplay/commit/56f7c0d75f8a860a5766b84e7348602f69a2bda7))
+* **icons:** add cpu and fpga icons ([d313e07](https://github.com/nokri-mohammed/packetplay/commit/d313e073116ae8af4256cb9bf6b0cb8163c52de3))
+* **icons:** add display-small, camera-small and daemon icons ([173217d](https://github.com/nokri-mohammed/packetplay/commit/173217de42efe06a435577d7e667afd31e6c8c26))
+* **icons:** add fpga-diode icon ([ee07fce](https://github.com/nokri-mohammed/packetplay/commit/ee07fcef6073d4fd052488bc0aae1b273d5a41cc))
+* **icons:** add kernel-ip and kernel-tcp layer icons ([3bcaa3c](https://github.com/nokri-mohammed/packetplay/commit/3bcaa3cb27696f0919352bb13a26bc24b62e8076))
+* **icons:** add nic-settings, the network card with a gear ([2433aa2](https://github.com/nokri-mohammed/packetplay/commit/2433aa2666f8c1e633b6e0027702ba75d357336b))
+* **icons:** add raspberry-pi and raspberry-pi-zero-2 icons ([0123a53](https://github.com/nokri-mohammed/packetplay/commit/0123a53e2a0aeb3638c38748a9465fedbbc1d2f0))
+* **icons:** darker green nic with the antenna on the front panel ([8be49c2](https://github.com/nokri-mohammed/packetplay/commit/8be49c25e17cef05c58f9f38be22cc1c96fce121))
+* **icons:** green network card with antenna, own icons in icons/custom, icon skill ([fcf7312](https://github.com/nokri-mohammed/packetplay/commit/fcf73127402f75c9c78e361c394fef13a40a2925))
+* **icons:** split fpga-diode into fpga-diode-left and fpga-diode-right ([2eb61e6](https://github.com/nokri-mohammed/packetplay/commit/2eb61e6fafc765c900f588f4d047757bc9d16088))
+
 ## 0.9.0 (2026-11-14)
 
 
