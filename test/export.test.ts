@@ -10,6 +10,7 @@ import {
   planFrames,
   viewportHeight,
   type ChromeLookups,
+  partialPath,
 } from "../src/export.ts";
 
 describe("parseExportArgs", () => {
@@ -128,5 +129,15 @@ describe("findChrome order", () => {
     const pw = ["/h/chromium-1200/chrome-linux/chrome", "/h/chromium-1248/chrome-linux64/chrome"];
     expect(findChrome(mk({ playwright: () => [...pw] }))).toEqual({ path: pw[1] as string, shell: false });
     expect(findChrome(mk({}))).toBeUndefined();
+  });
+});
+
+describe("partialPath", () => {
+  test("is a hidden sibling with the same extension", () => {
+    expect(partialPath("out/clip.mp4")).toBe("out/.clip.partial.mp4");
+    expect(partialPath("a.gif")).toBe(".a.partial.gif");
+  });
+  test("never equals the output path", () => {
+    expect(partialPath("x.mp4")).not.toBe("x.mp4");
   });
 });

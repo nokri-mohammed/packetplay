@@ -2,9 +2,9 @@
 // The page exposes window.__packetplay = { durationMs, seek(ms) }. We start a local Chrome headless,
 // talk to it over the Chrome DevTools Protocol (Bun's built-in WebSocket, localhost only), seek,
 // screenshot, and hand the frames to ffmpeg. No npm dependency.
-import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { extname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 
 export class ExportUsageError extends Error {}
 
@@ -116,6 +116,16 @@ export function planFrames(durationMs: number, o: Pick<ExportOptions, "fps" | "s
 const BASE = ["-y", "-hide_banner", "-loglevel", "error"];
 
 /** MP4: frames come in on stdin as PNG. H.264, yuv420p, even dimensions, faststart, crf 20. */
+/**
+ * Where ffmpeg writes while it works: a hidden file beside the output, same extension so ffmpeg picks
+ * the format. It is renamed to the real output only after ffmpeg finished cleanly, so an interrupted
+ * or failed export never leaves a half-written (unplayable) file at the output path.
+ */
+export function partialPath(out: string): string {
+  const ext = extname(out);
+  return join(dirname(out), `.${basename(out, ext)}.partial${ext}`);
+}
+
 export function mp4Args(out: string, fps: number): string[] {
   return [
     ...BASE,
@@ -289,6 +299,7 @@ export async function exportVideo(html: string, opts: ExportOptions): Promise<Ex
   if (!ffmpeg) throw new Error(FFMPEG_HINT);
 
   const work = mkdtempSync(join(tmpdir(), "packetplay-export-"));
+  const partial = partialPath(opts.out);
   let proc: ReturnType<typeof Bun.spawn> | undefined;
   let cdp: Cdp | undefined;
   let enc: ReturnType<typeof Bun.spawn> | undefined;
@@ -302,6 +313,9 @@ export async function exportVideo(html: string, opts: ExportOptions): Promise<Ex
     } catch {}
     try {
       rmSync(work, { recursive: true, force: true });
+    } catch {}
+    try {
+      rmSync(partial, { force: true });
     } catch {}
   };
   const onSignal = (code: number) => () => {
@@ -378,7 +392,7 @@ export async function exportVideo(html: string, opts: ExportOptions): Promise<Ex
     const plan = planFrames(durationMs, opts);
     const pattern = join(work, "f%06d.png");
     if (opts.format === "mp4") {
-      enc = Bun.spawn([ffmpeg, ...mp4Args(opts.out, opts.fps)], { stdin: "pipe", stdout: "ignore", stderr: "pipe" });
+      enc = Bun.spawn([ffmpeg, ...mp4Args(partial, opts.fps)], { stdin: "pipe", stdout: "ignore", stderr: "pipe" });
     }
     const progress = (n: number) => process.stderr.write(`\rframe ${n} of ${plan.frames}`);
     for (let i = 0; i < plan.frames; i++) {
@@ -408,12 +422,13 @@ export async function exportVideo(html: string, opts: ExportOptions): Promise<Ex
       if (code !== 0) throw new Error(`ffmpeg failed: ${err.trim()}`);
     } else {
       const palette = join(work, "palette.png");
-      for (const a of [gifPaletteArgs(pattern, opts.fps, palette), gifUseArgs(pattern, opts.fps, palette, opts.out)]) {
+      for (const a of [gifPaletteArgs(pattern, opts.fps, palette), gifUseArgs(pattern, opts.fps, palette, partial)]) {
         enc = Bun.spawn([ffmpeg, ...a], { stdout: "ignore", stderr: "pipe" });
         const [code, err] = await Promise.all([enc.exited, new Response(enc.stderr as ReadableStream).text()]);
         if (code !== 0) throw new Error(`ffmpeg failed: ${err.trim()}`);
       }
     }
+    renameSync(partial, opts.out);   // only now does the output path change
     return { out: opts.out, bytes: statSync(opts.out).size, frames: plan.frames };
   } finally {
     process.off("SIGINT", sigint);
