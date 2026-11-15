@@ -25,7 +25,7 @@ const errorOf = (fn: () => unknown): Error => {
 describe("iconNames", () => {
   test("is the sorted list of icons/isoflow and icons/custom svg stems", () => {
     expect(iconNames()).toEqual(files);
-    expect(iconNames().length).toBe(46);
+    expect(iconNames().length).toBe(48);
     expect(iconNames()).toContain("laptop");
     expect(iconNames()).toContain("truck-2");
   });

@@ -14,6 +14,14 @@ _C = math.cos(math.radians(30)) * SCALE
 _H = math.sin(math.radians(30)) * SCALE
 
 
+def set_scale(px):
+    """Change the pixels per unit (use it to make a small object fill an icon-sized canvas)."""
+    global SCALE, _C, _H
+    SCALE = px
+    _C = math.cos(math.radians(30)) * px
+    _H = math.sin(math.radians(30)) * px
+
+
 def P(u, v, w):
     return ((u - v) * _C, (u + v) * _H - w * SCALE)
 
@@ -87,6 +95,10 @@ class Icon:
         a, h = width / 2, u1 - d * head
         pts = [(u0, v - a), (h, v - a), (h, v - a * 2.2), (u1, v), (h, v + a * 2.2), (h, v + a), (u0, v + a)]
         self.poly([P(u, vv, w) for u, vv in pts], fill, stroke)
+
+    def face_v(self, v, u0, u1, w0, w1, fill, stroke=False):
+        """A flat shape on a v=const face (the left-hand face)."""
+        self.poly([P(u0, v, w1), P(u1, v, w1), P(u1, v, w0), P(u0, v, w0)], fill, stroke)
 
     def shadow(self, u0, u1, v0, v1, w=-0.2):
         self.poly([P(u0, v0, w), P(u1, v0, w), P(u1, v1, w), P(u0, v1, w)], "#000000", False, 0.15)

@@ -106,6 +106,8 @@ export interface Node {
     | "printer"
     | "pyramid"
     | "queue"
+    | "raspberry-pi"
+    | "raspberry-pi-zero-2"
     | "router"
     | "server"
     | "speech"
