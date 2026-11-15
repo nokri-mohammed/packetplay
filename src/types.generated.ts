@@ -92,6 +92,7 @@ export interface Node {
     | "mailmultiple"
     | "mobiledevice"
     | "nic"
+    | "nic-settings"
     | "office"
     | "package-module"
     | "paymentcard"

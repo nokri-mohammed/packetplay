@@ -24,7 +24,7 @@ those). Both folders are loaded by name, so `icon: nic` just works.
 ## Steps
 
 1. Copy `example_nic.py` next to `isogen.py` (both in this skill folder) to `my_icon.py` and rewrite
-   the drawing. `isogen.py` gives `Icon.box`, `top`, `face_u`, `shadow`, `save`. Axes: u right-down,
+   the drawing. `isogen.py` gives `Icon.box`, `top`, `face_u`, `shadow`, `save`, and `prism` (extrude any footprint, for example `gear(...)` or `circle(...)`). Worked examples: `example_nic.py`, `nic_settings.py` (card plus gear, reuses the card), `browser.py`. Axes: u right-down,
    v left-down, w up, 22 px per unit. Draw back to front.
 2. Generate: `cd .claude/skills/packetplay-icons && python3 my_icon.py ../../../icons/custom/<name>.svg`.
    Name: lowercase letters, digits and hyphens, not already used (`bun run src/cli.ts icons`).
