@@ -4,6 +4,12 @@ import { createTimer } from "animejs";
 import {
   SPEEDS,
   balloonRect,
+  labelRect,
+  placeBalloon,
+  textFactor,
+  MIN_LABEL_PX,
+  MIN_TEXT_PX,
+  type Rect,
   PULSE_MS,
   clampTime,
   frameAt,
@@ -71,7 +77,22 @@ let sw = 0;
 let sh = 0;
 const clampZoom = (z: number): number => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 
+// Small text stays readable when zoomed out: the factors are CSS variables on the SVG root and
+// page.ts sizes .group-label, .sub and .label with them. At 100% and above they are 1.
+const BASE_GROUP = 14;
+const BASE_SUB = 12;
+const BASE_LABEL = 15;
+let groupFactor = 1;
+
+function applyTextScale(): void {
+  groupFactor = textFactor(BASE_GROUP, zoom, MIN_TEXT_PX);
+  svg.style.setProperty("--ts-group", groupFactor.toFixed(4));
+  svg.style.setProperty("--ts-sub", textFactor(BASE_SUB, zoom, MIN_TEXT_PX).toFixed(4));
+  svg.style.setProperty("--ts-label", textFactor(BASE_LABEL, zoom, MIN_LABEL_PX).toFixed(4));
+}
+
 function applyView(): void {
+  applyTextScale();
   scene.setAttribute("transform", `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${zoom.toFixed(4)})`);
   zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
   if (grid) {
@@ -121,6 +142,12 @@ for (const g of svg.querySelectorAll("g[data-node]")) {
   const id = g.getAttribute("data-node");
   if (m && id) nodePos.set(id, { x: Number(m[1]), y: Number(m[2]) });
 }
+// Group labels sit at fixed scene points; a balloon must not cover them.
+const groupLabels: { text: string; x: number; y: number }[] = [];
+for (const t of svg.querySelectorAll("text.group-label")) {
+  groupLabels.push({ text: t.textContent ?? "", x: Number(t.getAttribute("x")), y: Number(t.getAttribute("y")) });
+}
+const labelRects = (): Rect[] => groupLabels.map((l) => labelRect(l.text, l.x, l.y, BASE_GROUP * groupFactor));
 const stepById = new Map<string, StepTL>(tl.steps.map((s) => [s.id, s]));
 
 type Seg = { x1: number; y1: number; x2: number; y2: number };
@@ -196,11 +223,11 @@ function packetMarkup(
   const longest = Math.max(title.length, ...rows.map((r) => r.length), 8);
   const w = Math.round(longest * PK_CHAR + 16);
   const h = PK_HEAD + (rows.length > 0 ? rows.length * PK_ROW + 8 : 0);
-  const box = balloonRect(x, y, w, h, direction);
+  const box = placeBalloon(x, y, w, h, direction, labelRects(), W);
   const x0 = box.x.toFixed(1);
   const y0 = box.y.toFixed(1);
   const id = `pk${nextClip++}`;
-  let out = `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${box.tetherY.toFixed(1)}" stroke="${color}" stroke-opacity="0.5" stroke-width="1.5"/>`;
+  let out = `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${box.tetherX.toFixed(1)}" y2="${box.tetherY.toFixed(1)}" stroke="${color}" stroke-opacity="0.5" stroke-width="1.5"/>`;
   out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${color}"/>`;
   out += `<clipPath id="${id}"><rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6"/></clipPath>`;
   out += `<rect class="pk-bg" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6" stroke="${color}"/>`;

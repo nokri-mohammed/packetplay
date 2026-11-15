@@ -1,0 +1,209 @@
+version: 1
+title: "A file's journey through the OSI layers"
+
+nodes:
+  capp:   { label: 7 Application, icon: browser,        sub: "browser or Node",             group: cuser,   at: [0, 0] }
+  ctcp:   { label: 4 Transport,   icon: kernel-tcp,     sub: "kernel: TCP",                 group: ckernel, at: [0, 3] }
+  cip:    { label: 3 Network,     icon: kernel-ip,      sub: "kernel: IP",                  group: ckernel, at: [0, 5] }
+  clink:  { label: 2 Data link,   icon: nic-settings,   sub: "network card and driver",     group: chw,     at: [0, 8] }
+  cphys:  { label: 1 Physical,    icon: nic,            sub: "network card (PHY)",          group: chw,     at: [0, 10] }
+
+  r1:     { label: Router (hop 1), icon: router, sub: "layers 1 to 3 only", group: net, at: [4, 10] }
+  r2:     { label: Router (hop 2), icon: router, sub: "layers 1 to 3 only", group: net, at: [7, 10] }
+
+  sphys:  { label: 1 Physical,    icon: nic,            sub: "network card (PHY)",          group: shw,     at: [11, 10] }
+  slink:  { label: 2 Data link,   icon: nic-settings,   sub: "network card and driver",     group: shw,     at: [11, 8] }
+  sip:    { label: 3 Network,     icon: kernel-ip,      sub: "kernel: IP",                  group: skernel, at: [11, 5] }
+  stcp:   { label: 4 Transport,   icon: kernel-tcp,     sub: "kernel: TCP",                 group: skernel, at: [11, 3] }
+  sapp:   { label: 7 Application, icon: daemon,         sub: "web server",                  group: suser,   at: [11, 0] }
+
+groups:
+  cuser:   { label: "Client laptop: browser (user space)" }
+  ckernel: { label: "Client laptop: kernel" }
+  chw:     { label: "Client laptop: network card (hardware)" }
+  net:     { label: Routers in between }
+  shw:     { label: "Server: network card (hardware)" }
+  skernel: { label: "Server: kernel" }
+  suser:   { label: "Server: web server (user space)" }
+
+links:
+  - [capp, ctcp]
+  - [ctcp, cip]
+  - [cip, clink]
+  - [clink, cphys]
+  - [cphys, r1]
+  - [r1, r2]
+  - [r2, sphys]
+  - [sphys, slink]
+  - [slink, sip]
+  - [sip, stcp]
+  - [stcp, sapp]
+
+tracks:
+  hs:   { label: "TCP handshake",              color: orange }
+  down: { label: "Sending: add a header",      color: blue }
+  wire: { label: "On the wire",               color: purple }
+  up:   { label: "Receiving: remove a header", color: green }
+  ack:  { label: "ACK",                        color: teal }
+
+chapters:
+  - title: "1. Open the connection (before the file)"
+    desc: "The two TCP layers agree on starting numbers first. Only the two ends take part. Routers just forward."
+    steps:
+      - from: ctcp
+        to: stcp
+        track: hs
+        label: "SYN (TCP segment)"
+        desc: "The client's TCP asks to open a connection. The packet goes down the client's layers, across both routers and up the server's layers. Routers only forward it."
+        data:
+          flags: SYN
+          src: "192.0.2.20:50000"
+          dst: "198.51.100.80:80"
+          seq: 1000
+        at:
+          r1:
+            desc: "Reads the IP header and forwards the packet. It does not take part in the handshake."
+          r2:
+            desc: "Same again. Routers only look up to layer 3."
+      - from: stcp
+        to: ctcp
+        track: hs
+        label: "SYN-ACK (TCP segment)"
+        desc: "The server agrees, sends its own starting number and says how much free buffer it has (the receive window, rwnd)."
+        data:
+          flags: SYN-ACK
+          seq: 5000
+          ack: 1001
+          win: "65536 bytes"
+      - from: ctcp
+        to: stcp
+        track: hs
+        label: "ACK (TCP segment)"
+        desc: "The connection is open. This cost one full round trip, which is why latency matters more than bandwidth for small requests."
+        data:
+          flags: ACK
+          seq: 1001
+          ack: 5001
+
+  - title: "2. Sender: from file to bits"
+    desc: "The data changes name at every layer: bytes, then segments, then packets, then frames, then bits."
+    steps:
+      - from: capp
+        to: ctcp
+        track: down
+        label: "HTTP message (4000 bytes)"
+        desc: "The browser puts notes.txt in an HTTP POST. Layers 5 and 6 (session, presentation) are not separate steps, because the browser does TLS encryption itself. send() copies the bytes into the kernel's send buffer in RAM. If that buffer is full, send() blocks (in Node, write() returns false)."
+        data:
+          file: notes.txt
+          bytes: "4000"
+          message: "HTTP headers + 4000 bytes"
+          encrypted: "yes"
+      - from: ctcp
+        to: cip
+        track: down
+        label: "3 TCP segments"
+        desc: "The kernel's TCP splits the stream into segments of at most about 1460 data bytes and adds a TCP header (ports, sequence number) to each. It only keeps min(cwnd, rwnd) bytes unacknowledged in flight."
+        data:
+          segments: "3 (1460 + 1460 + 1080)"
+          header: TCP
+          fields: "ports, sequence number"
+          limit: "min(cwnd, rwnd)"
+      - from: cip
+        to: clink
+        track: down
+        label: "3 IP packets"
+        desc: "The kernel's IP layer adds a header with the source and destination address to each segment. That makes 3 packets, which the kernel passes to the network driver."
+        data:
+          packets: "3"
+          header: IP
+          fields: "src IP, dst IP"
+      - from: clink
+        to: cphys
+        track: down
+        label: "3 Ethernet frames"
+        desc: "The network card and its driver add an Ethernet header (MAC addresses, type) and a CRC to each packet, making 3 frames of at most 1500 payload bytes (the MTU). Next the card (PHY) turns each frame into bits."
+        data:
+          frames: "3 (ETH + IP + TCP + data + CRC)"
+          header: "ETH + CRC"
+          fields: "MAC addresses, type"
+          next: "bits"
+
+  - title: "3. Across the network (routers)"
+    desc: "On the wire the frames travel as bits, a signal: voltage on copper, light in fibre or radio in WiFi."
+    steps:
+      - from: cphys
+        to: sphys
+        track: wire
+        label: "Bits (1010...) as a signal"
+        desc: "The card sends a start marker, then the frame bits. Each router turns the signal back into bits, finds the frame, checks the CRC and strips the Ethernet header. It reads only the destination IP, picks the next hop from its routing table, then wraps the same IP packet in a new frame with new MAC addresses. Each hop adds processing, queuing and transmission delay."
+        data:
+          bits: "10101010...10101011 0110 1001 ..."
+          src IP: "192.0.2.20"
+          dst IP: "198.51.100.80"
+          MAC: "client to router 1"
+        at:
+          r1:
+            set: { MAC: "router 1 to router 2" }
+            desc: "New frame, new MAC addresses. The IP addresses stay the same."
+          r2:
+            set: { MAC: "router 2 to server" }
+            desc: "Same job again. The medium can change here, for example copper to fibre."
+
+  - title: "4. Receiver: from bits to file"
+    desc: "The reverse: bits, then frames, then packets, then segments, then bytes."
+    steps:
+      - from: sphys
+        to: slink
+        track: up
+        label: "Bits (1010...)"
+        desc: "The signal reaches the server's network card (PHY), which turns it into bits. The card spots the start marker and cuts the bits into frames, reading each field at its fixed position."
+        data:
+          signal: "arrived on the wire"
+          bits: "10101010...10101011"
+          frames: "3"
+      - from: slink
+        to: sip
+        track: up
+        label: "3 IP packets (frames checked)"
+        desc: "The card and driver check the CRC and that the destination MAC is theirs, then strip the Ethernet header. Damaged frames are dropped. The rest are copied to RAM (DMA) and an interrupt tells the kernel they are ready."
+        data:
+          CRC: ok
+          dst MAC: mine
+          header: "ETH removed"
+          copied: "to RAM (DMA)"
+      - from: sip
+        to: stcp
+        track: up
+        label: "3 TCP segments"
+        desc: "The kernel's IP layer checks that the destination IP is this computer and strips the IP header, which leaves 3 segments."
+        data:
+          dst IP: mine
+          header: "IP removed"
+          segments: "3"
+      - from: stcp
+        to: sapp
+        track: up
+        label: "4000 bytes in order"
+        desc: "The kernel's TCP finds the connection by its source and destination IPs and ports, puts the segments in order by sequence number and strips the TCP header. The 4000 bytes wait in the socket's receive buffer in RAM. The web server reads them (Node data event), which frees space and grows rwnd. A slow reader leaves the buffer full and rwnd shrinks to 0. TCP has no message boundaries, so the HTTP parser reads the headers and then the 4000 byte body to rebuild notes.txt."
+        data:
+          buffer: "1460 + 1460 + 1080"
+          bytes: "4000"
+          parser: HTTP
+          file: "notes.txt rebuilt"
+
+  - title: "5. The ACK comes back"
+    steps:
+      - from: stcp
+        to: ctcp
+        track: ack
+        label: "ACK (TCP segment, with rwnd)"
+        desc: "The server's TCP confirms that bytes 1001 to 5000 arrived and reports its free buffer space (rwnd). The ACK travels the whole way back through the layers and the routers. If it never arrives, the sender retransmits, and its own cwnd limits how much it sends meanwhile."
+        data:
+          flags: ACK
+          ack: 5001
+          win: "61536 bytes"
+        at:
+          r1:
+            desc: "Forwards the ACK like any other packet."
+          r2:
+            desc: "Forwards the ACK like any other packet."

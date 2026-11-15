@@ -105,6 +105,98 @@ export function balloonRect(
   return { x: left, y: y + BALLOON_GAP, tetherY: y + BALLOON_GAP };
 }
 
+/** An axis-aligned rectangle in scene coordinates. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Average glyph width of the label font, as a multiple of the font size (an estimate). */
+export const LABEL_CHAR_EM = 0.6;
+
+/**
+ * Estimated box of a centred SVG text: width is characters times 0.6 times the font size, and the
+ * box runs from one font size above the baseline `y` to a quarter of it below (descenders).
+ */
+export function labelRect(text: string, x: number, y: number, fontSize: number): Rect {
+  const w = [...text].length * LABEL_CHAR_EM * fontSize;
+  return { x: x - w / 2, y: y - fontSize, w, h: fontSize * 1.25 };
+}
+
+/** True when the two rectangles share any area (touching edges do not count). */
+export function rectsOverlap(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/** Space kept between a moved balloon and the label it avoids. */
+export const LABEL_MARGIN = 6;
+
+export interface PlacedBalloon {
+  x: number;
+  y: number;
+  tetherY: number;
+  /** x where the tether line meets the box: the dot's x, held inside the box. */
+  tetherX: number;
+}
+
+/**
+ * Balloon position that avoids every label rectangle. Order: the preferred side, the opposite side,
+ * then the preferred side and the opposite side moved sideways (the shortest move first) until clear
+ * of the labels it hit, kept inside [0, sceneWidth]. If nothing is clear the preferred spot is used.
+ * The tether always runs from the dot to the box edge.
+ */
+export function placeBalloon(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  direction: 1 | -1,
+  labels: readonly Rect[],
+  sceneWidth: number,
+): PlacedBalloon {
+  const hits = (r: { x: number; y: number }, w = width): Rect[] =>
+    labels.filter((l) => rectsOverlap({ x: r.x, y: r.y, w, h: height }, l));
+  const finish = (r: { x: number; y: number; tetherY: number }): PlacedBalloon => ({
+    ...r,
+    tetherX: Math.min(Math.max(x, r.x), r.x + width),
+  });
+  const inside = (left: number): boolean => left >= 0 && left + width <= sceneWidth;
+
+  const preferred = balloonRect(x, y, width, height, direction);
+  if (hits(preferred).length === 0) return finish(preferred);
+  const opposite = balloonRect(x, y, width, height, direction === 1 ? -1 : 1);
+  if (hits(opposite).length === 0) return finish(opposite);
+
+  for (const base of [preferred, opposite]) {
+    const blocking = hits(base);
+    const moves: number[] = [];
+    for (const l of blocking) {
+      moves.push(l.x - LABEL_MARGIN - (base.x + width)); // left of the label
+      moves.push(l.x + l.w + LABEL_MARGIN - base.x); // right of the label
+    }
+    moves.sort((a, b) => Math.abs(a) - Math.abs(b));
+    for (const dx of moves) {
+      const cand = { ...base, x: base.x + dx };
+      if (inside(cand.x) && hits(cand).length === 0) return finish(cand);
+    }
+  }
+  return finish(preferred);
+}
+
+/** Smallest on-screen size, in px, of group labels and node subtitles. */
+export const MIN_TEXT_PX = 10;
+/** Smallest on-screen size, in px, of node labels. */
+export const MIN_LABEL_PX = 9;
+/** Largest growth factor of small text. */
+export const MAX_TEXT_FACTOR = 2;
+
+/** Factor that lifts text of `base` px to at least `minPx` on screen at `zoom`: clamp(minPx / (base * zoom), 1, 2). */
+export function textFactor(base: number, zoom: number, minPx: number): number {
+  return Math.min(MAX_TEXT_FACTOR, Math.max(1, minPx / (base * zoom)));
+}
+
 /** Length of the fade in and fade out of a step's dotted route. */
 export const ROUTE_FADE_MS = 300;
 /** The dashes of the route move one pixel per this many milliseconds. */
