@@ -3,7 +3,7 @@ import { readdirSync } from "node:fs";
 import { iconNames, loadIcon } from "../src/icons.ts";
 
 const root = new URL("../", import.meta.url).pathname;
-const files = readdirSync(root + "icons/isoflow")
+const files = [...readdirSync(root + "icons/isoflow"), ...readdirSync(root + "icons/custom")]
   .filter((f) => f.endsWith(".svg"))
   .map((f) => f.slice(0, -4))
   .sort();
@@ -23,7 +23,7 @@ const errorOf = (fn: () => unknown): Error => {
 };
 
 describe("iconNames", () => {
-  test("is the sorted list of icons/isoflow/*.svg stems", () => {
+  test("is the sorted list of icons/isoflow and icons/custom svg stems", () => {
     expect(iconNames()).toEqual(files);
     expect(iconNames().length).toBe(38);
     expect(iconNames()).toContain("laptop");
@@ -115,5 +115,16 @@ describe("loadIcon errors", () => {
     expect(e.message).not.toContain("/home");
     expect(e.message).not.toContain("icons/isoflow");
     expect(e.message).not.toContain(root);
+  });
+});
+
+describe("icon folders", () => {
+  test("no name exists in both icons/isoflow and icons/custom", () => {
+    const a = readdirSync(root + "icons/isoflow").filter((f) => f.endsWith(".svg"));
+    const b = readdirSync(root + "icons/custom").filter((f) => f.endsWith(".svg"));
+    expect(b.filter((f) => a.includes(f))).toEqual([]);
+  });
+  test("a custom icon loads", () => {
+    expect(loadIcon("nic").viewBox).toMatch(/^0 0 /);
   });
 });

@@ -6,6 +6,3 @@
 - Licence: MIT, Copyright 2023 Mark Mankarious (see `LICENSE` in this folder)
 
 Only the isoflow collection is vendored. Other isopacks collections carry vendor terms and are not included.
-
-One icon is not from isopacks: `nic.svg` (network card) was drawn for packetplay in the isoflow style and
-size, and is covered by this repository's MIT licence.

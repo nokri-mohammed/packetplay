@@ -128,7 +128,7 @@
             "user",
             "vm"
           ],
-          "description": "File name stem of an SVG in icons/isoflow/."
+          "description": "File name stem of an SVG in icons/isoflow/ or icons/custom/."
         },
         "sub": {
           "type": "string",

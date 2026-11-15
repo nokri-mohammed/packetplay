@@ -9,19 +9,26 @@ export interface Icon {
   body: string;
 }
 
-const ICON_DIR = new URL("../icons/isoflow/", import.meta.url);
+// Vendored isoflow icons (MIT, unmodified) and our own icons, kept in separate folders.
+const ICON_DIRS = [
+  new URL("../icons/isoflow/", import.meta.url),
+  new URL("../icons/custom/", import.meta.url),
+];
+
+function dirStems(dir: URL): string[] {
+  try {
+    return readdirSync(dir).filter((f) => f.endsWith(".svg")).map((f) => f.slice(0, -4));
+  } catch {
+    return [];
+  }
+}
 
 let names: string[] | undefined;
 const cache = new Map<string, Icon>();
 
-/** Sorted names of the vendored icons (file stems of icons/isoflow/*.svg). */
+/** Sorted names of all icons (file stems of icons/isoflow/*.svg and icons/custom/*.svg). */
 export function iconNames(): string[] {
-  names ??= (embedded
-    ? Object.keys(embedded.icons)
-    : readdirSync(ICON_DIR)
-        .filter((f) => f.endsWith(".svg"))
-        .map((f) => f.slice(0, -4))
-  ).sort();
+  names ??= (embedded ? Object.keys(embedded.icons) : ICON_DIRS.flatMap(dirStems)).sort();
   return [...names];
 }
 
@@ -44,7 +51,8 @@ export function loadIcon(name: string): Icon {
   const hit = cache.get(name);
   if (hit) return hit;
 
-  const raw = embedded?.icons[name] ?? readFileSync(new URL(`${name}.svg`, ICON_DIR), "utf8");
+  const raw = embedded?.icons[name] ??
+    readFileSync(new URL(`${name}.svg`, ICON_DIRS.find((d) => dirStems(d).includes(name)) ?? ICON_DIRS[0]!), "utf8");
   const open = raw.match(/<svg\b[^>]*>/);
   const close = raw.lastIndexOf("</svg>");
   if (!open || open.index === undefined || close < 0) {

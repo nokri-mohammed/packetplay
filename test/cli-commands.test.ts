@@ -134,7 +134,7 @@ describe("cli icons", () => {
     const { out, code } = await run(["icons"]);
     expect(code).toBe(0);
     const names = out.trimEnd().split("\n");
-    const files = readdirSync(root + "icons/isoflow")
+    const files = [...readdirSync(root + "icons/isoflow"), ...readdirSync(root + "icons/custom")]
       .filter((f) => f.endsWith(".svg"))
       .map((f) => f.slice(0, -4))
       .sort();

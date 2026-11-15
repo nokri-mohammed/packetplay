@@ -17,10 +17,11 @@ if (!player.success || !player.outputs[0]) {
 }
 const playerJs = await player.outputs[0].text();
 
-const iconDir = path("icons/isoflow/");
 const icons: Record<string, string> = {};
-for (const f of readdirSync(iconDir).filter((f) => f.endsWith(".svg")).sort()) {
-  icons[f.slice(0, -4)] = readFileSync(iconDir + f, "utf8");
+for (const dir of ["icons/isoflow/", "icons/custom/"]) {
+  for (const f of readdirSync(path(dir)).filter((f) => f.endsWith(".svg")).sort()) {
+    icons[f.slice(0, -4)] = readFileSync(path(dir) + f, "utf8");
+  }
 }
 const schema: unknown = JSON.parse(readFileSync(path("schema/scene.schema.json"), "utf8"));
 

@@ -68,7 +68,7 @@ export interface Node {
    */
   label: string;
   /**
-   * File name stem of an SVG in icons/isoflow/.
+   * File name stem of an SVG in icons/isoflow/ or icons/custom/.
    */
   icon:
     | "block"

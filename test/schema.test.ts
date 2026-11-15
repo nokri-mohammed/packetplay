@@ -34,8 +34,8 @@ describe("scene schema", () => {
     s.links[0] = ["client", "r1", "net"];
     expect(validate(s)).toBe(false);
   });
-  test("icon enum matches icons/isoflow", () => {
-    const icons = readdirSync(root + "icons/isoflow")
+  test("icon enum matches icons/isoflow and icons/custom", () => {
+    const icons = [...readdirSync(root + "icons/isoflow"), ...readdirSync(root + "icons/custom")]
       .filter((f) => f.endsWith(".svg"))
       .map((f) => f.replace(/\.svg$/, ""))
       .sort();
