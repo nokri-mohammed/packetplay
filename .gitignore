@@ -3,3 +3,4 @@ dist/
 private/
 .claude/settings.local.json
 .claude/agent-memory/
+__pycache__/
