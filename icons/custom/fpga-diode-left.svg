@@ -82,10 +82,11 @@
 	<polygon fill="#0070D9" points="292.1,84.6 335.9,109.9 292.1,135.2 248.3,109.9"/>
 	<polygon fill="#B5C5DC" points="234.9,117.6 278.7,142.9 234.9,168.2 191.1,142.9"/>
 	<polygon fill="#FFC600" points="177.8,150.6 221.6,175.9 177.8,201.2 133.9,175.9"/>
-	<polygon fill="#231F20" points="437.8,113.7 447.4,119.2 258.7,228.1 249.2,222.6"/>
-	<polygon fill="#8FB8F0" stroke="#231F20" stroke-width="4" stroke-linejoin="round" stroke-miterlimit="10" points="346.5,130.2 418.9,172.0 313.9,190.8"/>
-	<polygon fill="#231F20" points="273.9,167.7 353.9,213.9 342.5,220.5 262.4,174.3"/>
-	<polygon fill="#231F20" points="523.6,163.2 533.1,168.7 344.5,277.6 334.9,272.1"/>
-	<polygon fill="#FFC600" stroke="#231F20" stroke-width="4" stroke-linejoin="round" stroke-miterlimit="10" points="389.4,219.8 435.2,246.2 455.7,207.9"/>
-	<polygon fill="#231F20" points="440.5,185.9 493.8,216.7 482.4,223.3 429.1,192.5"/>
+	<polygon fill="#FFC600" points="520.7,150.6 564.5,175.9 520.7,201.2 476.9,175.9"/>
+	<polygon fill="#B5C5DC" points="463.5,183.6 507.4,208.9 463.5,234.2 419.7,208.9"/>
+	<polygon fill="#0070D9" points="406.4,216.6 450.2,241.9 406.4,267.2 362.6,241.9"/>
+	<polygon fill="#B5C5DC" points="349.2,249.6 393.1,274.9 349.2,300.2 305.4,274.9"/>
+	<polygon fill="#231F20" points="444.5,115.4 454.0,120.9 261.6,232.0 252.1,226.5"/>
+	<polygon fill="#0070D9" stroke="#231F20" stroke-width="4" stroke-linejoin="round" stroke-miterlimit="10" points="351.1,130.8 427.3,174.8 316.8,194.6"/>
+	<polygon fill="#231F20" points="274.9,170.4 358.8,218.8 347.3,225.4 263.5,177.0"/>
 </svg>
