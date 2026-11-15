@@ -24,7 +24,7 @@ those). Both folders are loaded by name, so `icon: nic` just works.
 ## Steps
 
 1. Copy `example_nic.py` next to `isogen.py` (both in this skill folder) to `my_icon.py` and rewrite
-   the drawing. `isogen.py` gives `Icon.box`, `top`, `face_u`, `shadow`, `save`, and `prism` (extrude any footprint, for example `gear(...)` or `circle(...)`). Worked examples: `example_nic.py`, `nic_settings.py` (card plus gear, reuses the card), `browser.py`, `kernel_layers.py` (two icons from one file, shared chip base, `arrow` helper), `chips.py` (cpu, fpga, and fpga-diode-left and fpga-diode-right from one function, with a flat `diode` symbol helper), `pi_boards.py` (raspberry-pi and raspberry-pi-zero-2; `set_scale` makes a small board fill the canvas, `face_v` draws on the left face). Axes: u right-down,
+   the drawing. `isogen.py` gives `Icon.box`, `top`, `face_u`, `shadow`, `save`, and `prism` (extrude any footprint, for example `gear(...)` or `circle(...)`). Worked examples: `example_nic.py`, `nic_settings.py` (card plus gear, reuses the card), `browser.py`, `kernel_layers.py` (two icons from one file, shared chip base, `arrow` helper), `chips.py` (cpu, fpga, and fpga-diode-left and fpga-diode-right from one function, with a flat `diode` symbol helper), `pi_boards.py` (raspberry-pi and raspberry-pi-zero-2; `set_scale` makes a small board fill the canvas, `face_v` draws on the left face), `devices.py` (display-small, camera-small, daemon; `ring_arrow` draws a flat loop arrow). Axes: u right-down,
    v left-down, w up, 22 px per unit. Draw back to front.
 2. Generate: `cd .claude/skills/packetplay-icons && python3 my_icon.py ../../../icons/custom/<name>.svg`.
    Name: lowercase letters, digits and hyphens, not already used (`bun run src/cli.ts icons`).

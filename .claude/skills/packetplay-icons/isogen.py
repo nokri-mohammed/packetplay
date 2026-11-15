@@ -100,6 +100,18 @@ class Icon:
         """A flat shape on a v=const face (the left-hand face)."""
         self.poly([P(u0, v, w1), P(u1, v, w1), P(u1, v, w0), P(u0, v, w0)], fill, stroke)
 
+    def ring_arrow(self, w, cu, cv, r_in, r_out, a0, a1, fill, head=1.3):
+        """A flat circular arrow (a loop) on plane w, sweeping from angle a0 to a1 (radians)."""
+        n = 24
+        pt = lambda r, a: (cu + r * math.cos(a), cv + r * math.sin(a))
+        outer = [pt(r_out, a0 + (a1 - a0) * k / n) for k in range(n + 1)]
+        inner = [pt(r_in, a0 + (a1 - a0) * k / n) for k in range(n, -1, -1)]
+        mid = (r_in + r_out) / 2
+        flare = (r_out - r_in) * 0.9
+        tip = pt(mid, a1 + head / mid)
+        pts = outer + [pt(r_out + flare, a1), tip, pt(r_in - flare, a1)] + inner
+        self.poly([P(u, v, w) for u, v in pts], fill, False)
+
     def shadow(self, u0, u1, v0, v1, w=-0.2):
         self.poly([P(u0, v0, w), P(u1, v0, w), P(u1, v1, w), P(u0, v1, w)], "#000000", False, 0.15)
 
