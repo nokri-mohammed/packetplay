@@ -6,6 +6,7 @@ import {
   placeBalloon,
   rectsOverlap,
   textFactor,
+  SUB_HIDE_ZOOM,
 } from "../src/player-core.ts";
 
 describe("labelRect", () => {
@@ -86,13 +87,16 @@ describe("textFactor", () => {
     expect(textFactor(12, 1.6, 10)).toBe(1);
   });
   test("grows as the page zooms out", () => {
-    expect(textFactor(12, 0.53, 10)).toBeCloseTo(10 / (12 * 0.53));
-    expect(textFactor(14, 0.53, 10) * 14 * 0.53).toBeGreaterThanOrEqual(10 - 1e-9);
+    expect(textFactor(12, 0.53, 8)).toBeCloseTo(8 / (12 * 0.53));
+    expect(textFactor(14, 0.53, 8) * 14 * 0.53).toBeGreaterThanOrEqual(8 - 1e-9);
   });
-  test("is capped at 2", () => {
-    expect(textFactor(12, 0.2, 10)).toBe(2);
+  test("is capped at 1.5", () => {
+    expect(textFactor(12, 0.2, 10)).toBe(1.5);
   });
   test("node labels use their own minimum", () => {
     expect(textFactor(15, 0.5, 9)).toBe(1.2);
+  });
+  test("subtitles hide below the hide zoom", () => {
+    expect(SUB_HIDE_ZOOM).toBe(0.4);
   });
 });

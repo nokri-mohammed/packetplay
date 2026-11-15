@@ -3,12 +3,12 @@
 import { createTimer } from "animejs";
 import {
   SPEEDS,
-  balloonRect,
   labelRect,
   placeBalloon,
   textFactor,
   MIN_LABEL_PX,
   MIN_TEXT_PX,
+  SUB_HIDE_ZOOM,
   type Rect,
   PULSE_MS,
   clampTime,
@@ -89,6 +89,7 @@ function applyTextScale(): void {
   svg.style.setProperty("--ts-group", groupFactor.toFixed(4));
   svg.style.setProperty("--ts-sub", textFactor(BASE_SUB, zoom, MIN_TEXT_PX).toFixed(4));
   svg.style.setProperty("--ts-label", textFactor(BASE_LABEL, zoom, MIN_LABEL_PX).toFixed(4));
+  svg.style.setProperty("--sub-op", zoom < SUB_HIDE_ZOOM ? "0" : "1");
 }
 
 function applyView(): void {
@@ -363,7 +364,7 @@ function typingMarkup(step: StepTL, st: { text: string; caret: boolean; sent: bo
   if (!pos) return "";
   const w = Math.max(110, Math.round(step.typing.length * PK_CHAR + 28));
   const h = 26;
-  const box = balloonRect(pos.x, pos.y, w, h, 1);
+  const box = placeBalloon(pos.x, pos.y, w, h, 1, labelRects(), W);
   const x0 = box.x.toFixed(1);
   const y0 = box.y.toFixed(1);
   let out = `<rect class="pk-bg" x="${x0}" y="${y0}" width="${w}" height="${h}" rx="13" stroke="${step.color}" stroke-width="${flash ? 3.5 : 1.5}"/>`;

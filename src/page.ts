@@ -34,7 +34,7 @@ h1{font-size:1.25rem;font-weight:600;margin:0 0 8px}
 .zoombar button{min-height:32px;min-width:32px;padding:0 10px;background:transparent;border-radius:var(--r-full);font-size:.85rem}
 .zoombar button:hover{background:var(--fill)}
 #zoom-label{min-width:3.2em;text-align:center;font-size:.8rem;color:var(--muted)}
-.stage svg .group-label{font-size:calc(14px * var(--ts-group,1))}.stage svg .sub{font-size:calc(12px * var(--ts-sub,1))}.stage svg .label{font-size:calc(15px * var(--ts-label,1))}.stage svg .label{transform:translateY(calc((var(--ts-label,1) - 1) * 11px))}.stage svg .sub{transform:translateY(calc((var(--ts-label,1) - 1) * 11px + (var(--ts-sub,1) - 1) * 9px))}
+.stage svg .group-label{font-size:calc(14px * var(--ts-group,1))}.stage svg .sub{font-size:calc(12px * var(--ts-sub,1))}.stage svg .label{font-size:calc(15px * var(--ts-label,1))}.stage svg .label{transform:translateY(calc((var(--ts-label,1) - 1) * 11px))}.stage svg .sub{opacity:var(--sub-op,1);transition:opacity .15s;transform:translateY(calc((var(--ts-label,1) - 1) * 11px + (var(--ts-sub,1) - 1) * 9px))}
 .pk-bg{fill:var(--card-bg);stroke-width:1.5}
 .pk-tx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.pk-row{fill:var(--fg)}
 .caption{margin:8px 0;padding:8px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow);min-height:7em}

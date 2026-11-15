@@ -186,13 +186,15 @@ export function placeBalloon(
 }
 
 /** Smallest on-screen size, in px, of group labels and node subtitles. */
-export const MIN_TEXT_PX = 10;
+export const MIN_TEXT_PX = 8;
 /** Smallest on-screen size, in px, of node labels. */
-export const MIN_LABEL_PX = 9;
+export const MIN_LABEL_PX = 8;
+/** Below this zoom the node subtitles are hidden: they cannot be read and would only collide. */
+export const SUB_HIDE_ZOOM = 0.4;
 /** Largest growth factor of small text. */
-export const MAX_TEXT_FACTOR = 2;
+export const MAX_TEXT_FACTOR = 1.5;
 
-/** Factor that lifts text of `base` px to at least `minPx` on screen at `zoom`: clamp(minPx / (base * zoom), 1, 2). */
+/** Factor that lifts text of `base` px to at least `minPx` on screen at `zoom`: clamp(minPx / (base * zoom), 1, MAX_TEXT_FACTOR). */
 export function textFactor(base: number, zoom: number, minPx: number): number {
   return Math.min(MAX_TEXT_FACTOR, Math.max(1, minPx / (base * zoom)));
 }
