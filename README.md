@@ -187,7 +187,7 @@ bun run build:skill   # rebuild skills/packetplay/packetplay.js after changing s
 ```
 
 Built with Bun and TypeScript on top of [anime.js](https://animejs.com). See the
-[design plan](docs/plans/2026-11-14-packetplay.md).
+[design plan](.claude/docs/plans/2026-11-14-packetplay.md).
 
 ## License
 

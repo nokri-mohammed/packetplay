@@ -21,7 +21,7 @@ The website example uses it: `shop.example.com` does not exist on the page until
   possible with current schema?"
 - Answer to the CEO's question: the highlight needs no schema change (player only). Hiding a node needs
   a small, optional, backwards-compatible schema addition (below).
-- Read `docs/LESSONS.md`, `src/timeline.ts` (`HopTL`, `StepTL`, lanes), `src/player-core.ts`
+- Read `.claude/docs/LESSONS.md`, `src/timeline.ts` (`HopTL`, `StepTL`, lanes), `src/player-core.ts`
   (`frameAt`, `Frame`), `src/player.ts`, `src/render.ts`, `src/validate.ts`, `src/lanes.ts`,
   `schema/scene.schema.json`. CEO rules: no tester, reviewer or browser automation (he tests by hand).
   PUBLIC repo: documentation addresses only, no absolute local paths or usernames. No em dashes. No new

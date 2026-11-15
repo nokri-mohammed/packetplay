@@ -22,7 +22,7 @@ the same on every arrow. Today every hop takes `HOP_MS` (1100 ms), so a long arr
 - Reference length: in the isometric grid two neighbour nodes are 163.5 px apart, so the trimmed arrow
   (`LANE_TRIM = 44` at each end) is 75.5 px long and takes 1100 ms today. Pick a round speed that keeps
   that ordinary hop close to today's time: `HOP_SPEED = 0.07` px per ms (75.5 px takes about 1079 ms).
-- Read `docs/LESSONS.md`. CEO rules: no tester or browser automation (he tests by hand). PUBLIC repo: no
+- Read `.claude/docs/LESSONS.md`. CEO rules: no tester or browser automation (he tests by hand). PUBLIC repo: no
   absolute local paths or usernames. No em dashes. No new dependencies. No schema change.
 
 ## Spec

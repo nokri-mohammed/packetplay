@@ -18,7 +18,7 @@ message is sent. The website example starts like that: the user types the addres
   also is it possible to start the initial like show a sort of typing animation then send".
 - Typing needs one optional, backwards-compatible schema field (below). Everything else is player or
   constants.
-- Read `docs/LESSONS.md`, `src/timeline.ts`, `src/player-core.ts` (`frameAt`, `routeHighlight`,
+- Read `.claude/docs/LESSONS.md`, `src/timeline.ts`, `src/player-core.ts` (`frameAt`, `routeHighlight`,
   `revealOpacity`, `balloonRect`, `BALLOON_GAP`), `src/player.ts`, `src/validate.ts`,
   `schema/scene.schema.json`, `examples/website.scene.yaml`. CEO rules: no tester or browser automation
   (he tests by hand). PUBLIC repo: no absolute local paths or usernames. No em dashes. No new

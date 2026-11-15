@@ -17,7 +17,7 @@ OSI model as a stack of 7 layers and how a file travels down it, layer by layer,
 - Copy the style of `examples/website.scene.yaml` and `examples/udp.scene.yaml`. The player shows each
   `data` key as a row on the packet (header = step label, max 4 rows, keep to 4 keys at most). Steps
   need `from != to` (the router rejects equal nodes), so every step is one hop between neighbours.
-- Read `docs/LESSONS.md`. CEO rules: no tester, reviewer or browser automation (he tests by hand).
+- Read `.claude/docs/LESSONS.md`. CEO rules: no tester, reviewer or browser automation (he tests by hand).
   PUBLIC repo: documentation addresses only (`192.0.2.x`, `198.51.100.x`), no absolute local paths or
   usernames. No em dashes. No new dependencies. No schema, engine, layout, timing or player change.
 

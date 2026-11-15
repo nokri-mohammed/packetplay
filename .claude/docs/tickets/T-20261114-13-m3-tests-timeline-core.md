@@ -15,9 +15,9 @@ how navigation, speed and keys behave). No browser is needed for these.
 
 ## Context
 
-- Plan: `docs/plans/2026-11-14-packetplay.md` ("Pipeline" step 5, "Player", "Validation" M3). M1
+- Plan: `.claude/docs/plans/2026-11-14-packetplay.md` ("Pipeline" step 5, "Player", "Validation" M3). M1
   and M2 are done (`loadScene`, `validateScene`, `routeStep`, `layoutScene`, `renderSvg`).
-- Read `docs/LESSONS.md` first. Three rules from it: assert exact values; run `bun run typecheck`
+- Read `.claude/docs/LESSONS.md` first. Three rules from it: assert exact values; run `bun run typecheck`
   on your tests before handing over (strict index access: use a `need()` helper or `!`); check any
   arithmetic against the spec formulas by hand.
 - Use `examples/webrtc.scene.yaml` (`loadScene`) plus small inline scenes. Layout comes from

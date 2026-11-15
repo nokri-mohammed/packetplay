@@ -10,8 +10,8 @@
   noreply address.
 - Stack: Bun, TypeScript, anime.js v4. No new dependencies without the manager's note in the ticket.
 - Test-first: tdd-guide writes the tests, then the implementation, then code-reviewer checks the diff.
-- Tickets live in `docs/tickets/` (from `homelab-team-all/docs/tickets/TEMPLATE.md`). Plans live in
-  `docs/plans/`. The team diagram is `docs/TEAM.md`.
+- Tickets live in `.claude/docs/tickets/` (from `homelab-team-all/docs/tickets/TEMPLATE.md`). Plans live in
+  `.claude/docs/plans/`. The team diagram is `.claude/docs/TEAM.md`.
 - `packetplay-manager` coordinates all work and is the CEO's contact. Plans, releases, npm
   publishing and deletes need the CEO's approval.
 - Releases run through the release-please pull request (see README, Releasing). Merging that pull request

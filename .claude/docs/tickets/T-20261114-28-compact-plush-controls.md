@@ -34,7 +34,7 @@ toggle-group for the speeds, circular icon buttons).
   white with a soft shadow instead of a border, `ghost` is transparent); `icon` buttons are circles;
   `toggle-group` is a row of pills where the selected item is raised (accent fill, white text) and the
   rest are flat.
-- Read `docs/LESSONS.md`, `src/page.ts` (CSS, markup, ids), `src/player.ts` (about lines 585 to 740:
+- Read `.claude/docs/LESSONS.md`, `src/page.ts` (CSS, markup, ids), `src/player.ts` (about lines 585 to 740:
   `playBtn`, `speedBtns`, `data-speed`, the `btn-*` map, zoom buttons, keyboard handling) and the tests
   that look at the page (`grep -ln "btn-play\|data-speed\|zoom-" test/*.ts`). CEO rules: no tester or
   browser automation (he tests by hand). PUBLIC repo: no absolute local paths or usernames. No em

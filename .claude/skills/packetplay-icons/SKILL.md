@@ -37,4 +37,4 @@ those). Both folders are loaded by name, so `icon: nic` just works.
    (`test/icons.test.ts`, `test/cli-commands.test.ts`).
 6. Verify: a tiny scene using `icon: <name>` passes `bun run src/cli.ts validate` and builds;
    `bun test`, `bun run typecheck`, `./scripts/check-public.sh --all` all exit 0.
-7. Log it in `docs/TEAM.md`, then commit (`feat(icons): add <name> icon`) after check-public passes.
+7. Log it in `.claude/docs/TEAM.md`, then commit (`feat(icons): add <name> icon`) after check-public passes.

@@ -21,8 +21,8 @@ HTML file that the CEO opens in a browser to watch and control the animated WebR
   (constants, interfaces, timing rules, data overlay rules, navigation rules, keys, marks).
 - Already built (M1, M2; do not change behaviour): `loadScene`, `validateScene`, `routeStep`,
   `layoutScene`, `renderSvg` (static SVG with `data-node`, `data-link`, `data-group` attributes; it
-  must stay free of `<style>`), `prefixIds`, `bun run render:example`. Read `docs/LESSONS.md`.
-- Plan: `docs/plans/2026-11-14-packetplay.md` ("Player", "CLI").
+  must stay free of `<style>`), `prefixIds`, `bun run render:example`. Read `.claude/docs/LESSONS.md`.
+- Plan: `.claude/docs/plans/2026-11-14-packetplay.md` ("Player", "CLI").
 - Dependencies approved by the manager for this ticket: runtime `animejs` 4.5.0 (exact version, MIT).
   Nothing else. No Playwright, no test libraries.
 

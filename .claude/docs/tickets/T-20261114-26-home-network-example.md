@@ -21,7 +21,7 @@ top. Report honestly what the schema and player could not express.
   - Left switch is a star hub with 5 devices around it: Printer, Desktop, Laptop, Cell Phone, Gaming
     Console. The right switch is a star hub with the same 5 devices: Gaming Console, Printer, Laptop,
     Desktop, Cell Phone. So 2 LANs (stars) hang off one router that connects them to the Internet.
-- Read `docs/LESSONS.md`, `examples/osi.scene.yaml` (groups, explicit layout), `examples/website.scene.yaml`
+- Read `.claude/docs/LESSONS.md`, `examples/osi.scene.yaml` (groups, explicit layout), `examples/website.scene.yaml`
   (hidden, reveal, typing, NAT `at`), `src/layout.ts` (isometric tile space: `at: [i, j]`, `NODE_STEP`),
   `schema/scene.schema.json`, and the icon list in `icons/isoflow/`.
 - CEO rules: no tester or browser automation (he tests by hand). PUBLIC repo: documentation addresses

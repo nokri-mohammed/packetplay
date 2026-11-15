@@ -20,7 +20,7 @@ fails with a clear message for a newer one, and the schema has a real, stable id
   placeholder), no version field; `package.json` is `0.0.0`; `$schema` in a scene is accepted and
   ignored; every schema change so far was optional and additive (`grid`, `at`, `group`, `hidden`,
   `reveal`, `typing`).
-- Read `docs/LESSONS.md`, `schema/scene.schema.json`, `src/load.ts`, `src/validate.ts`,
+- Read `.claude/docs/LESSONS.md`, `schema/scene.schema.json`, `src/load.ts`, `src/validate.ts`,
   `test/schema.test.ts`, `test/load.test.ts`, `README.md`. CEO rules: no tester or browser automation.
   PUBLIC repo: no absolute local paths or usernames, no private values; the repository URL
   `github.com/nokri-mohammed/packetplay` is public and fine. No em dashes. No new dependencies.

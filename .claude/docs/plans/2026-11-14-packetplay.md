@@ -1,7 +1,7 @@
 # packetplay: design plan
 
 **Status:** Approved by the CEO on 2026-11-14 (stack confirmed: TypeScript on Bun). M1 tickets are in
-`docs/tickets/` (T-20261114-1 to 5).
+`.claude/docs/tickets/` (T-20261114-1 to 5).
 
 ## Goal
 

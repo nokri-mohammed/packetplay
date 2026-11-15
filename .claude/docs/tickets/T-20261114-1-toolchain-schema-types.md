@@ -13,7 +13,7 @@ single source of truth for the scene format, with TypeScript types generated fro
 
 ## Context
 
-- Plan: `docs/plans/2026-11-14-packetplay.md` (approved by the CEO on 2026-11-14). Read "Scene format".
+- Plan: `.claude/docs/plans/2026-11-14-packetplay.md` (approved by the CEO on 2026-11-14). Read "Scene format".
 - Example scenes that MUST validate against the schema: `examples/webrtc.scene.yaml` and
   `examples/webrtc.scene.json`. The yaml file's first line already points at
   `../schema/scene.schema.json`.

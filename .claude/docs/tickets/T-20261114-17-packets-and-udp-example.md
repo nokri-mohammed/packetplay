@@ -19,7 +19,7 @@ travelling, ships next to the WebRTC one, in YAML and JSON.
 - Today a packet is a coloured circle and a separate data card floats next to it
   (`src/player.ts`, `src/player-core.ts` `Card`, `frameAt`). Flow steps draw small dots. The step's
   `data` (key and values, with `at[node].set` overlays) already reaches the player per hop.
-- Read `docs/LESSONS.md`. CEO rules: no tester, reviewer or browser automation (he tests by hand). This
+- Read `.claude/docs/LESSONS.md`. CEO rules: no tester, reviewer or browser automation (he tests by hand). This
   repo is PUBLIC: documentation example addresses only (`192.0.2.x`, `198.51.100.x`, `203.0.113.x`,
   `example.com`), no absolute local paths or usernames in any file. No em dashes. No new dependencies.
 

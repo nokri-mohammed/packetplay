@@ -17,7 +17,7 @@ generic=(
 pats=("${generic[@]}")
 patterns_file="${PRIVATE_PATTERNS_FILE:-$HOME/.config/private-patterns/patterns.txt}"
 if [ ! -f "$patterns_file" ] || [ ! -r "$patterns_file" ]; then
-  echo "private patterns file missing: set it up first (see CLAUDE.md)" >&2
+  echo "private patterns file missing: set it up first (see .claude/CLAUDE.md)" >&2
   exit 2
 fi
 while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && pats+=("$l"); done < "$patterns_file"

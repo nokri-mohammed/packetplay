@@ -27,7 +27,7 @@ stops at the near edge of the node, and then appears on the far side of the icon
   the edge of the icon where it arrived, then the next hop starts at the edge of the icon where the
   arrow leaves (the other side). Nothing is drawn over the middle of the icon. Timing is unchanged (hop
   1300 ms, rest 750 ms): only positions change.
-- Read `docs/LESSONS.md`. CEO rules: no tester or browser automation (he tests by hand). PUBLIC repo: no
+- Read `.claude/docs/LESSONS.md`. CEO rules: no tester or browser automation (he tests by hand). PUBLIC repo: no
   absolute local paths or usernames. No em dashes. No new dependencies. Keep `render.ts` free of
   `<style>`; the static page must still show plain arrows without JavaScript.
 

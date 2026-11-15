@@ -20,7 +20,7 @@ server, then the TLS handshake, then the HTTP request and response.
   (same fields, packet info rows come from `data`, NAT rewrites come from `at: { router: { set,
   desc } }`). The player shows each `data` key as a row on the packet (header = step label, up to 4
   rows, then `+N more`), so keep each step to 4 keys at most.
-- Read `docs/LESSONS.md`. CEO rules: no tester, reviewer or browser automation (he tests by hand).
+- Read `.claude/docs/LESSONS.md`. CEO rules: no tester, reviewer or browser automation (he tests by hand).
   This repo is PUBLIC: documentation addresses only (`192.0.2.x`, `198.51.100.x`, `203.0.113.x`,
   `example.com`), no absolute local paths or usernames in any file. No em dashes. No new
   dependencies. No schema change.

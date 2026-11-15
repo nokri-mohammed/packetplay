@@ -16,7 +16,7 @@ direction.
 ## Context
 
 - CEO approved both changes on 2026-11-14. Read the plan section "Design changes requested by the
-  CEO" in `docs/plans/2026-11-14-packetplay.md`, and `docs/LESSONS.md`.
+  CEO" in `.claude/docs/plans/2026-11-14-packetplay.md`, and `.claude/docs/LESSONS.md`.
 - Reference page to copy the grid, zoom and pan approach from (read it, do not edit it):
   `learning-notes/notes/networking/file-journey.html` (a sibling project under `homelab-team-all/projects/`; the manager gives you the full path in the task prompt, never write it into a repo file)
   (tile `141.5 x 81.9`, `MIN_ZOOM 0.2`, `MAX_ZOOM 1.6`, background image is an SVG data URI tile,
